@@ -189,3 +189,106 @@ else if (msgType === 'NEXT_STEP_TRANSITION') {
             console.log(`[${new Date().toLocaleTimeString()}] Sequence status not recognized`);
     }
 }
+
+
+{  
+    // var ALL_STATUSES = ["OPENING_FIRST_SETS", "TURNING_PUMPS_ON", "TURNING_PUMPS_OFF", "CLOSING_PREV_VALVES", "COMPLETED"];
+
+    // if parent sequence doesn't exist in metadata
+    if (!metadata.parent_sequence) {
+        metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
+    }
+    
+    var seqTransitionPlanParent = msg.custom_irrig_info.sequences[metadata.parent_sequence].seqTransitionPlan;
+    var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
+    console.log(`[${new Date().toLocaleTimeString()}] *** ${seqTransitionParentStatus} - Next step in transition from parent sequence "${metadata.parent_sequence}" to its children sequences: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}`);
+
+    switch (seqTransitionParentStatus) {
+        case "OPENING_FIRST_SETS":
+            var iterable = seqTransitionPlanParent.setsToOpen;
+            var index = iterable.indexOf(metadata.curr_set);
+            if (index > -1) {
+                iterable.splice(index, 1);
+            }
+            console.log(`[${new Date().toLocaleTimeString()}] How many sets left to open? ${iterable.length}`);
+
+            if (iterable.length === 0) {
+                msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_ON";
+                metadata.TransitionStepStarted = true;
+                this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+            }
+            break;
+        case "TURNING_PUMPS_ON":
+            var iterable = seqTransitionPlanParent.pumpsToOn;
+            var index = iterable.indexOf(metadata.originatorName);
+            if (index > -1) {
+                iterable.splice(index, 1);
+            }
+            console.log(`[${new Date().toLocaleTimeString()}] How many pumps left to turn on? ${iterable.length}`);
+            if (iterable.length === 0) {
+                msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_OFF";
+                metadata.TransitionStepStarted = true;
+                this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+            }
+            break;
+        case "TURNING_PUMPS_OFF":
+            var iterable = seqTransitionPlanParent.pumpsToOff;
+            var index = iterable.indexOf(metadata.originatorName);
+            if (index > -1) {
+                iterable.splice(index, 1);
+            }
+            console.log(`[${new Date().toLocaleTimeString()}] How many pumps left to turn off? ${iterable.length}`);
+            if (iterable.length === 0) {
+                msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "CLOSING_PREV_VALVES";
+                metadata.TransitionStepStarted = true;
+                this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+            }
+            break;
+        case "CLOSING_PREV_VALVES":
+            var iterable = seqTransitionPlanParent.setsToClose;
+            var index = iterable.indexOf(metadata.curr_set);
+            if (index > -1) {
+                iterable.splice(index, 1);
+            }
+            console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
+            if (iterable.length === 0) {
+                msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "COMPLETED";
+
+                // remove the parent sequence from the transitioning_sequences
+                var index = msg.custom_irrig_info.transitioning_sequences.indexOf(metadata.parent_sequence);
+                if (index > -1) {
+                    msg.custom_irrig_info.transitioning_sequences.splice(index, 1);
+                }
+            }   
+            break;
+        default:
+            console.log(`[${new Date().toLocaleTimeString()}] Sequence status not recognized`);
+    
+
+    // in case we just started a new transitionStatus
+    if (metadata.TransitionStepStarted) {
+        for (var i = 0; i < iterable.length; i++) {
+            metadata.originatorName = iterable[i];
+            msg = {
+                "status": deviceStatus
+            };
+            tb_instance.sendDownlink(msg, metadata);
+        };
+
+        // pause for 3 seconds
+        setTimeout(() => {
+            console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
+        }, 3000);
+
+        // Simulate uplinks from the pumps
+        for (var i = 0; i < iterable.length; i++) {
+            metadata.originatorName = iterable[i];
+            msg = {
+                "status": deviceStatus
+            };
+            msgType = 'POST_TELEMETRY_REQUEST';
+            tb_instance.pumpRuleChain(msg, metadata, msgType);
+        }
+    }
+}
+}

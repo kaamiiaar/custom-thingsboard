@@ -61,7 +61,7 @@ class Thingsboard {
                         break;
                     }
                 }
-                msgType = 'CHECK_PUMPS_TO_ON';
+                msgType = 'CHECK_TRANSITION_FOR_UPLINK';
             }
             else if (msg.status === "off") {
                 // see which sequence gave the command to the pump
@@ -71,7 +71,7 @@ class Thingsboard {
                         break;
                     }
                 }
-                msgType = 'CHECK_PUMPS_TO_OFF';
+                msgType = 'CHECK_TRANSITION_FOR_UPLINK';
             }
             
             this.seqRuleChain(msg, metadata, msgType);   // forward the message to the sequence rule chain
@@ -92,7 +92,6 @@ class Thingsboard {
             msg.custom_irrig_info = curr_farm.custom_irrig_info;    // get the irrigation information
             
             msgType = 'CHECK_VALVES_TO_VISIT';
-            
             this.setRuleChain(msg, metadata, msgType);   // forward the message to the set rule chain to check if all valves have been visited
         }
         }
@@ -177,17 +176,14 @@ class Thingsboard {
             }
         }
 
-        else if (msgType === 'NEXT_STEP_TRANSITION') {  
-            // var ALL_STATUSES = ["OPENING_FIRST_SETS", "TURNING_PUMPS_ON", "TURNING_PUMPS_OFF", "CLOSING_PREV_VALVES", "COMPLETED"];
-
+        else if (msgType === 'CHECK_TRANSITION_FOR_UPLINK') {
             // if parent sequence doesn't exist in metadata
             if (!metadata.parent_sequence) {
                 metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
             }
-            
             var seqTransitionPlanParent = msg.custom_irrig_info.sequences[metadata.parent_sequence].seqTransitionPlan;
             var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
-            console.log(`[${new Date().toLocaleTimeString()}] *** ${seqTransitionParentStatus} - Next step in transition from parent sequence "${metadata.parent_sequence}" to its children sequences: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}`);
+            console.log(`[${new Date().toLocaleTimeString()}] *** Checking transition for uplink with message type: ${msgType} for sequence ${metadata.parent_sequence} having status: ${seqTransitionParentStatus}`);
 
             switch (seqTransitionParentStatus) {
                 case "OPENING_FIRST_SETS":
@@ -248,37 +244,106 @@ class Thingsboard {
                     }   
                     break;
                 default:
-                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status not recognized`);
-            
-
-            // in case we just started a new transitionStatus
-            if (metadata.TransitionStepStarted) {
-                for (var i = 0; i < iterable.length; i++) {
-                    metadata.originatorName = iterable[i];
-                    msg = {
-                        "status": deviceStatus
-                    };
-                    tb_instance.sendDownlink(msg, metadata);
-                };
-
-                // pause for 3 seconds
-                setTimeout(() => {
-                    console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
-                }, 3000);
-
-                // Simulate uplinks from the pumps
-                for (var i = 0; i < iterable.length; i++) {
-                    metadata.originatorName = iterable[i];
-                    msg = {
-                        "status": deviceStatus
-                    };
-                    msgType = 'POST_TELEMETRY_REQUEST';
-                    tb_instance.pumpRuleChain(msg, metadata, msgType);
+                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status {seqTransitionParentStatus} not recognized`);
+        
                 }
             }
-        }
+
+        else if (msgType === 'NEXT_STEP_TRANSITION') 
+        {
+            if (!metadata.parent_sequence) {
+                metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
+            }
+            var seqTransitionPlanParent = msg.custom_irrig_info.sequences[metadata.parent_sequence].seqTransitionPlan;
+            var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
+            
+            switch (seqTransitionParentStatus) {
+                case "TURNING_PUMPS_ON":
+                    var allPumpsToOn = [...seqTransitionPlanParent.pumpsToOn];
+                    var iterable = seqTransitionPlanParent.pumpsToOn;
+
+                    console.log(`[${new Date().toLocaleTimeString()}] How many pumps left to turn on? ${iterable.length}`);
+                    if (iterable.length === 0) {
+                        msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_OFF";
+                        this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+                    } else {
+                        for (var i = 0; i < iterable.length; i++) {
+                            metadata.originatorName = iterable[i];
+                            msg = {
+                                "status": "on"
+                            };
+                            this.sendDownlink(msg, metadata);
+                        };
+                
+                        // pause for 3 seconds
+                        setTimeout(() => {
+                            console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
+                        }, 3000);
+                
+                        // Simulate uplinks from the pumps
+                        for (var i = 0; i < allPumpsToOn.length; i++) {
+                            metadata.originatorName = allPumpsToOn[i];
+                            msg = {
+                                "status": "on"
+                            };
+                            msgType = 'POST_TELEMETRY_REQUEST';
+                            this.pumpRuleChain(msg, metadata, msgType);
+                        }
+                    }
+                    break;
+                case "TURNING_PUMPS_OFF":
+                    var allPumpsToOff = [...seqTransitionPlanParent.pumpsToOff];
+                    var iterable = seqTransitionPlanParent.pumpsToOff;
+
+                    console.log(`[${new Date().toLocaleTimeString()}] How many pumps to turn off? ${iterable.length}`);
+                    if (iterable.length === 0) {
+                        msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "CLOSING_PREV_VALVES";
+                        this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+                    } else {
+                        for (var i = 0; i < iterable.length; i++) {
+                            metadata.originatorName = iterable[i];
+                            msg = {
+                                "status": "off"
+                            };
+                            this.sendDownlink(msg, metadata);
+                        };
+                
+                        // pause for 3 seconds
+                        setTimeout(() => {
+                            console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
+                        }, 3000);
+                
+                        // Simulate uplinks from the pumps
+                        for (var i = 0; i < allPumpsToOff.length; i++) {
+                            metadata.originatorName = allPumpsToOff[i];
+                            msg = {
+                                "status": "off"
+                            };
+                            msgType = 'POST_TELEMETRY_REQUEST';
+                            this.pumpRuleChain(msg, metadata, msgType);
+                        }
+                    }
+                    break;
+                    
+                case "CLOSING_PREV_VALVES":
+                    var iterable = seqTransitionPlanParent.setsToClose;
+                    var index = iterable.indexOf(metadata.curr_set);
+                    
+                    console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
+
+                    // send downlink to close all these sets
+                    for (var i = 0; i < iterable.length; i++) {
+                        metadata.curr_set = iterable[i];       // can also change the originator to the set in TB
+                        msgType = 'CLOSE_SET';
+                        this.setRuleChain(msg, metadata, msgType);
+                    }
+
+                default:
+                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status ${seqTransitionParentStatus} not recognized`);
+         
         }
     }
+}
 
     setRuleChain(msg, metadata, msgType) {
         console.log(`[${new Date().toLocaleTimeString()}] *** Set rule chain triggered with message type: ${msgType} for set ${metadata.curr_set}`);
@@ -353,9 +418,9 @@ class Thingsboard {
             
             if (valvesToVisit.length === 0) {
                 console.log(`[${new Date().toLocaleTimeString()}] All valves have been visited for set ${metadata.curr_set}`);
-                msg.custom_irrig_info.sets[metadata.curr_set].irrigationStatus = msg.status;  // set the irrigation status to on
+                msg.custom_irrig_info.sets[metadata.curr_set].irrigationStatus = msg.status;  // set the irrigation status to on or off
                 metadata.curr_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].children[0];
-                msgType = 'NEXT_STEP_TRANSITION';
+                msgType = 'CHECK_TRANSITION_FOR_UPLINK';
                 this.seqRuleChain(msg, metadata, msgType);
             }
         
