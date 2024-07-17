@@ -1,6 +1,6 @@
 // set.js
 class Set {
-    constructor(name, label, type, duration, irrigationStatus, sequence, valves = [], pumps = []) {
+    constructor(name, label, type, duration, irrigationStatus, sequence, valves = [], pumps = [], wlSensors = []) {
         this.name = name;
         this.label = label;
         this.type = type;
@@ -11,6 +11,7 @@ class Set {
         this.pumps = pumps;
         this.fromRelations = [];
         this.toRelations = ["c1fa"];
+        this.wlSensors = wlSensors;
     }
 }
 

@@ -3,28 +3,27 @@ class Thingsboard {
     constructor(devices, assets) {
         this.devices = Object.freeze(devices); // Freezing the devices array
         this.assets = Object.freeze(assets);   // Freezing the assets array
+        this.wlSensorsWaiting = [];
     }
 
-    // pauseAndSendUplink(msg, metadata, msgType) {
-    //     // pause for 3 second
-    //     setTimeout(() => {
-    //         console.log(`[${new Date().toLocaleTimeString()}] Downlink sent to ${metadata.originatorName}`);
-    //     }, 3000);
+    pauseAndReceiveUplink(msg, metadata, msgType) {
+        // Send Uplinks to the respective device rule chains
+        var deviceName = metadata.originatorName;
+        msg = msg;
+        var device = this.devices[deviceName];
+        var deviceType = device.type;
 
-    //     // find the device type
-    //     var device = this.devices[metadata.originatorName];
-    //     var deviceType = device.type;
-
-    //     // Send Uplinks to the respective device rule chains
-    //     if (deviceType === 'pump') {
-    //         console.log(`[${new Date().toLocaleTimeString()}] Pump uplink message: ${JSON.stringify(msg)}`);
-    //         this.pumpRuleChain(msg);
-    //     } else if (deviceType === 'valve') {
-    //         console.log(`[${new Date().toLocaleTimeString()}] Valve uplink message: ${JSON.stringify(msg)}`);
-    //         this.valveRuleChain(msg, metadata, msgType);
-    //     }
-    // }
-
+        if (deviceType === 'pump') {
+            console.log(`[${new Date().toLocaleTimeString()}] Pump uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            this.pumpRuleChain(msg, metadata, msgType);
+        } else if (deviceType === 'valve') {
+            console.log(`[${new Date().toLocaleTimeString()}] Valve uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            this.valveRuleChain(msg, metadata, msgType);
+        } else if (deviceType === 'water alert sensor') {
+            console.log(`[${new Date().toLocaleTimeString()}] Water level sensor uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            this.wlSensorRuleChain(msg, metadata, msgType);
+        }
+    }
 
     sendDownlink(msg, metadata, msgType='') {
         console.log(`[${new Date().toLocaleTimeString()}] Sending downlink to ${metadata.originatorName} with message: ${JSON.stringify(msg)}`);        
@@ -32,10 +31,10 @@ class Thingsboard {
 
     wlSensorRuleChain(msg, metadata, msgType) {
         if (msgType === 'POST_TELEMETRY_REQUEST') {
-            var wlSensor = metadata.originatorName;
+            console.log(`[${new Date().toLocaleTimeString()}] [UPLINK] Water level sensor uplink received: ${JSON.stringify(msg)} from water level sensor ${metadata.originatorName}`);
+            console.log(`[${new Date().toLocaleTimeString()}] *** Water level sensor rule chain triggered with message: ${JSON.stringify(msg)}`);
+            var wlSensor = this.devices[metadata.originatorName]; 
             wlSensor.status = msg.status;
-            console.log(`[${new Date().toLocaleTimeString()}] Water level sensor rule chain triggered with message: ${JSON.stringify(msg)}`);
-            console.log(`[${new Date().toLocaleTimeString()}] Water level sensor information: ${JSON.stringify(wlSensor, null, 2)}`);    
         }
     }
 
@@ -174,6 +173,20 @@ class Thingsboard {
                 msgType = 'OPEN_SET';
                 this.setRuleChain(msg, metadata, msgType);
             }
+
+            // prepare message for uplink simulation
+            for (var i = 0; i < allFirstSets.length; i++) {
+                var valves = msg.custom_irrig_info.sets[allFirstSets[i]].valves;
+                this.wlSensorsWaiting.push(msg.custom_irrig_info.sets[allFirstSets[i]].wlSensors[0]);
+
+                // pause and receive uplink
+                for (var j = 0; j < valves.length; j++) {
+                    metadata.originatorName = valves[j];
+                    this.pauseAndReceiveUplink(msg={
+                        "status": "on"
+                    }, metadata, msgType='POST_TELEMETRY_REQUEST');
+                }
+            }
         }
 
         else if (msgType === 'CHECK_TRANSITION_FOR_UPLINK') {
@@ -244,7 +257,7 @@ class Thingsboard {
                     }   
                     break;
                 default:
-                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status {seqTransitionParentStatus} not recognized`);
+                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status ${seqTransitionParentStatus} not recognized`);
         
                 }
             }
@@ -274,20 +287,13 @@ class Thingsboard {
                             };
                             this.sendDownlink(msg, metadata);
                         };
-                
-                        // pause for 3 seconds
-                        setTimeout(() => {
-                            console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
-                        }, 3000);
-                
-                        // Simulate uplinks from the pumps
-                        for (var i = 0; i < allPumpsToOn.length; i++) {
-                            metadata.originatorName = allPumpsToOn[i];
-                            msg = {
+
+                        // pause and receive uplink for simulation
+                        for (var j = 0; j < allPumpsToOn.length; j++) {
+                            metadata.originatorName = allPumpsToOn[j];
+                            this.pauseAndReceiveUplink(msg={
                                 "status": "on"
-                            };
-                            msgType = 'POST_TELEMETRY_REQUEST';
-                            this.pumpRuleChain(msg, metadata, msgType);
+                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
                         }
                     }
                     break;
@@ -307,20 +313,12 @@ class Thingsboard {
                             };
                             this.sendDownlink(msg, metadata);
                         };
-                
-                        // pause for 3 seconds
-                        setTimeout(() => {
-                            console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
-                        }, 3000);
-                
-                        // Simulate uplinks from the pumps
-                        for (var i = 0; i < allPumpsToOff.length; i++) {
-                            metadata.originatorName = allPumpsToOff[i];
-                            msg = {
+                        // pause and receive uplink for simulation
+                        for (var j = 0; j < allPumpsToOff.length; j++) {
+                            metadata.originatorName = allPumpsToOff[j];
+                            this.pauseAndReceiveUplink(msg={
                                 "status": "off"
-                            };
-                            msgType = 'POST_TELEMETRY_REQUEST';
-                            this.pumpRuleChain(msg, metadata, msgType);
+                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
                         }
                     }
                     break;
@@ -330,17 +328,28 @@ class Thingsboard {
                     var index = iterable.indexOf(metadata.curr_set);
                     
                     console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
-
-                    // send downlink to close all these sets
-                    for (var i = 0; i < iterable.length; i++) {
-                        metadata.curr_set = iterable[i];       // can also change the originator to the set in TB
-                        msgType = 'CLOSE_SET';
-                        this.setRuleChain(msg, metadata, msgType);
+                    if (iterable.length === 0) {
+                        msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "COMPLETED";
+                        this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+                    } else {
+                        // send downlink to close all these sets
+                        for (var i = 0; i < iterable.length; i++) {
+                            metadata.curr_set = iterable[i];       // can also change the originator to the set in TB
+                            msgType = 'CLOSE_SET';
+                            this.setRuleChain(msg, metadata, msgType);
+                        }
                     }
+                    break;
 
-                default:
-                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status ${seqTransitionParentStatus} not recognized`);
-         
+                case "COMPLETED":
+                    // pause and receive uplink for all the wlSensors
+                    console.log(`[${new Date().toLocaleTimeString()}] *** Sequence ${metadata.parent_sequence} completed`);
+                    for (var j = 0; j < this.wlSensorsWaiting.length; j++) {
+                        metadata.originatorName = this.wlSensorsWaiting[j];
+                        this.pauseAndReceiveUplink(msg={
+                            "status": "Wet"
+                        }, metadata, msgType='POST_TELEMETRY_REQUEST');
+                    }
         }
     }
 }
@@ -361,21 +370,6 @@ class Thingsboard {
                 };
                 this.sendDownlink(msg, metadata);
             }
-
-            // pause for 3 seconds
-            setTimeout(() => {
-                console.log(`[${new Date().toLocaleTimeString()}] waiting for uplinks ...`);
-            }, 3000);
-
-            // Simulate uplinks from the valves
-            for (var i = 0; i < valves.length; i++) {
-                metadata.originatorName = valves[i];
-                msg = {
-                    "status": "on"
-                };
-                msgType = 'POST_TELEMETRY_REQUEST';
-                this.valveRuleChain(msg, metadata, msgType);
-            }
         }
 
         else if (msgType === 'CLOSE_SET') {
@@ -391,17 +385,6 @@ class Thingsboard {
                     "status": "off"
                 };
                 this.sendDownlink(msg, metadata);
-            }
-
-            // pause for 3 seconds
-            setTimeout(() => {
-                console.log(`[${new Date().toLocaleTimeString()}] Downlink sent to ${metadata.originatorName}`);
-            }, 3000);
-
-            // Simulate uplinks from the valves
-            for (var i = 0; i < valves.length; i++) {
-                console.log(`[${new Date().toLocaleTimeString()}] [UPLINK] Valve uplink received: ${JSON.stringify(msg)} from valve ${metadata.originatorName}`);
-                this.valveRuleChain(msg, metadata, msgType);
             }
         }
 

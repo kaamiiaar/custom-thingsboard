@@ -59,20 +59,20 @@ const valves = {
 
 // instantiate Sets
 const sets = {
-    "c1fa-set1": new Set("c1fa-set1", "Set 1", "irrigation set", 10, "off", "sequence4", ["c1fa-valve5-w"], ["c1fa-pump1"]),    // name, label, type, duration, irrigationStatus, sequence, valves = [], pumps = []
-    "c1fa-set2": new Set("c1fa-set2", "Set 2", "irrigation set", 10, "off", "sequence2", ["c1fa-valve5-e", "c1fa-valve4-w"], ["c1fa-pump1", "c1fa-pump2"]),
-    "c1fa-set3": new Set("c1fa-set3", "Set 3", "irrigation set", 10, "off", "sequence2", ["c1fa-valve4-e", "c1fa-valve3-w"], ["c1fa-pump1", "c1fa-pump2"]),
-    "c1fa-set4": new Set("c1fa-set4", "Set 4", "irrigation set", 10, "off", "sequence2", ["c1fa-valve3-e", "c1fa-valve2-w"], ["c1fa-pump1", "c1fa-pump2"]),
-    "c1fa-set5": new Set("c1fa-set5", "Set 5", "irrigation set", 10, "off", "sequence2", ["c1fa-valve2-e", "c1fa-valve1-w"], ["c1fa-pump1", "c1fa-pump2"]),
-    "c1fa-set6": new Set("c1fa-set6", "Set 6", "irrigation set", 10, "off", "sequence2", ["c1fa-valve6-w"], ["c1fa-pump1", "c1fa-pump2"]),
-    "c1fa-set7": new Set("c1fa-set7", "Set 7", "irrigation set", 10, "off", "sequence1", ["c1fa-valve6-e", "c1fa-valve7-w"], ["c1fa-pump2", "c1fa-pump3"]),
-    "c1fa-set8": new Set("c1fa-set8", "Set 8", "irrigation set", 10, "off", "sequence3", ["c1fa-valve7-e", "c1fa-valve8-w"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set9": new Set("c1fa-set9", "Set 9", "irrigation set", 10, "off", "sequence3", ["c1fa-valve8-e", "c1fa-valve9-e"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set10": new Set("c1fa-set10", "Set 10", "irrigation set", 10, "off", "sequence3", ["c1fa-valve10-w"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set11": new Set("c1fa-set11", "Set 11", "irrigation set", 10, "off", "sequence3", ["c1fa-valve10-e"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set12": new Set("c1fa-set12", "Set 12", "irrigation set", 10, "off", "sequence3", ["c1fa-valve11-e"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set13": new Set("c1fa-set13", "Set 13", "irrigation set", 10, "off", "sequence3", ["c1fa-valve12-e"], ["c1fa-pump3", "c1fa-pump4"]),
-    "c1fa-set14": new Set("c1fa-set14", "Set 14", "irrigation set", 10, "off", "sequence5", ["c1fa-valve13-e"], ["c1fa-pump4"])
+    "c1fa-set1": new Set("c1fa-set1", "Set 1", "irrigation set", 10, "off", "sequence4", ["c1fa-valve5-w"], ["c1fa-pump1"], ["c1fa-was1"]),    // name, label, type, duration, irrigationStatus, sequence, valves = [], pumps = [], wlSensors = []
+    "c1fa-set2": new Set("c1fa-set2", "Set 2", "irrigation set", 10, "off", "sequence2", ["c1fa-valve5-e", "c1fa-valve4-w"], ["c1fa-pump1", "c1fa-pump2"], ["c1fa-was2"]),
+    "c1fa-set3": new Set("c1fa-set3", "Set 3", "irrigation set", 10, "off", "sequence2", ["c1fa-valve4-e", "c1fa-valve3-w"], ["c1fa-pump1", "c1fa-pump2"], ["c1fa-was3"]),
+    "c1fa-set4": new Set("c1fa-set4", "Set 4", "irrigation set", 10, "off", "sequence2", ["c1fa-valve3-e", "c1fa-valve2-w"], ["c1fa-pump1", "c1fa-pump2"], ["c1fa-was4"]),
+    "c1fa-set5": new Set("c1fa-set5", "Set 5", "irrigation set", 10, "off", "sequence2", ["c1fa-valve2-e", "c1fa-valve1-w"], ["c1fa-pump1", "c1fa-pump2"], ["c1fa-was5"]),
+    "c1fa-set6": new Set("c1fa-set6", "Set 6", "irrigation set", 10, "off", "sequence2", ["c1fa-valve6-w"], ["c1fa-pump1", "c1fa-pump2"], ["c1fa-was6"]),
+    "c1fa-set7": new Set("c1fa-set7", "Set 7", "irrigation set", 10, "off", "sequence1", ["c1fa-valve6-e", "c1fa-valve7-w"], ["c1fa-pump2", "c1fa-pump3"], ["c1fa-was7"]),
+    "c1fa-set8": new Set("c1fa-set8", "Set 8", "irrigation set", 10, "off", "sequence3", ["c1fa-valve7-e", "c1fa-valve8-w"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was8"]),
+    "c1fa-set9": new Set("c1fa-set9", "Set 9", "irrigation set", 10, "off", "sequence3", ["c1fa-valve8-e", "c1fa-valve9-e"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was9"]),
+    "c1fa-set10": new Set("c1fa-set10", "Set 10", "irrigation set", 10, "off", "sequence3", ["c1fa-valve10-w"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was10"]),
+    "c1fa-set11": new Set("c1fa-set11", "Set 11", "irrigation set", 10, "off", "sequence3", ["c1fa-valve10-e"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was11"]),
+    "c1fa-set12": new Set("c1fa-set12", "Set 12", "irrigation set", 10, "off", "sequence3", ["c1fa-valve11-e"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was12"]),
+    "c1fa-set13": new Set("c1fa-set13", "Set 13", "irrigation set", 10, "off", "sequence3", ["c1fa-valve12-e"], ["c1fa-pump3", "c1fa-pump4"], ["c1fa-was13"]),
+    "c1fa-set14": new Set("c1fa-set14", "Set 14", "irrigation set", 10, "off", "sequence5", ["c1fa-valve13-e"], ["c1fa-pump4"], ["c1fa-was14"])
 };
 
 
