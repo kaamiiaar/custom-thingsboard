@@ -9,18 +9,17 @@ class Thingsboard {
     pauseAndReceiveUplink(msg, metadata, msgType) {
         // Send Uplinks to the respective device rule chains
         var deviceName = metadata.originatorName;
-        msg = msg;
         var device = this.devices[deviceName];
         var deviceType = device.type;
 
         if (deviceType === 'pump') {
-            console.log(`[${new Date().toLocaleTimeString()}] Pump uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            // console.log(`[${new Date().toLocaleTimeString()}] Pump uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
             this.pumpRuleChain(msg, metadata, msgType);
         } else if (deviceType === 'valve') {
-            console.log(`[${new Date().toLocaleTimeString()}] Valve uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            // console.log(`[${new Date().toLocaleTimeString()}] Valve uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
             this.valveRuleChain(msg, metadata, msgType);
         } else if (deviceType === 'water alert sensor') {
-            console.log(`[${new Date().toLocaleTimeString()}] Water level sensor uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            // console.log(`[${new Date().toLocaleTimeString()}] Water level sensor uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
             this.wlSensorRuleChain(msg, metadata, msgType);
         }
     }
@@ -35,6 +34,18 @@ class Thingsboard {
             console.log(`[${new Date().toLocaleTimeString()}] *** Water level sensor rule chain triggered with message: ${JSON.stringify(msg)}`);
             var wlSensor = this.devices[metadata.originatorName]; 
             wlSensor.status = msg.status;
+
+            var curr_set = this.assets[wlSensor.toRelations[0]];    // which set?
+            var curr_farm = this.assets[curr_set.toRelations[0]];    // which farm?
+            msg.custom_irrig_info = curr_farm.custom_irrig_info;    // get the irrigation information
+
+            // check if the water level sensor is wet
+            if (msg.status === "Wet") {
+                // transition that set
+                metadata.curr_set = curr_set.name;
+                msgType = 'TRANSITION_SET';
+                this.setRuleChain(msg, metadata, msgType);
+            }
         }
     }
 
@@ -52,7 +63,7 @@ class Thingsboard {
             
             // is it on?
             if (msg.status === "on") {
-                // see which sequence gave the command to the pump
+                // see which sequence gave the command to the pump, do this by seeing which transitioning sequence the pump belongs to
                 for (var sequenceIndex = 0; sequenceIndex < msg.custom_irrig_info.transitioning_sequences.length; sequenceIndex++) {
                     var sequence = msg.custom_irrig_info.transitioning_sequences[sequenceIndex];
                     if (msg.custom_irrig_info.sequences[sequence].seqTransitionPlan.pumpsToOn.includes(metadata.originatorName)) {
@@ -85,11 +96,13 @@ class Thingsboard {
             device.status = msg.status;      // save telemetry
             // console.log(`[${new Date().toLocaleTimeString()}] Valve information: ${JSON.stringify(device, null, 2)}`);
 
-            var curr_set = this.assets[this.devices[metadata.originatorName].toRelations[0]];    // which set?
+            var curr_set_name = device.toRelations[0];    // which set?
+            var curr_set = this.assets[curr_set_name];    // which set?
             var curr_farm = this.assets[curr_set.toRelations[0]];      // which farm?
 
             msg.custom_irrig_info = curr_farm.custom_irrig_info;    // get the irrigation information
-            
+            metadata.curr_set = curr_set_name;      // set the current set
+
             msgType = 'CHECK_VALVES_TO_VISIT';
             this.setRuleChain(msg, metadata, msgType);   // forward the message to the set rule chain to check if all valves have been visited
         }
@@ -161,6 +174,8 @@ class Thingsboard {
                 "setsToClose": msg.custom_irrig_info.sequences[metadata.curr_sequence].sets
             };
 
+            console.log(`[${new Date().toLocaleTimeString()}] Transition plan for sequence ${metadata.curr_sequence}: ${JSON.stringify(seqTransitionPlan, null, 2)}`);
+
             msg.custom_irrig_info.sequences[metadata.curr_sequence].seqTransitionPlan = seqTransitionPlan;
             msg.custom_irrig_info.sequences[metadata.curr_sequence]["status"] = "OPENING_FIRST_SETS";     // options: OPENING_FIRST_SETS, TURNING_PUMPS_ON, TURNING_PUMPS_OFF, CLOSING_PREV_VALVES
             
@@ -191,9 +206,9 @@ class Thingsboard {
 
         else if (msgType === 'CHECK_TRANSITION_FOR_UPLINK') {
             // if parent sequence doesn't exist in metadata
-            if (!metadata.parent_sequence) {
-                metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
-            }
+            // if (!metadata.parent_sequence) {
+            //     metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
+            // }
             var seqTransitionPlanParent = msg.custom_irrig_info.sequences[metadata.parent_sequence].seqTransitionPlan;
             var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
             console.log(`[${new Date().toLocaleTimeString()}] *** Checking transition for uplink with message type: ${msgType} for sequence ${metadata.parent_sequence} having status: ${seqTransitionParentStatus}`);
@@ -248,17 +263,12 @@ class Thingsboard {
                     console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
                     if (iterable.length === 0) {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "COMPLETED";
-
-                        // remove the parent sequence from the transitioning_sequences
-                        var index = msg.custom_irrig_info.transitioning_sequences.indexOf(metadata.parent_sequence);
-                        if (index > -1) {
-                            msg.custom_irrig_info.transitioning_sequences.splice(index, 1);
-                        }
-                    }   
+                        metadata.TransitionStepStarted = true;
+                        this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+                    }
                     break;
                 default:
-                    console.log(`[${new Date().toLocaleTimeString()}] Sequence status ${seqTransitionParentStatus} not recognized`);
-        
+                    console.log(`[${new Date().toLocaleTimeString()}] No transition status found for sequence ${metadata.parent_sequence}`);
                 }
             }
 
@@ -342,14 +352,27 @@ class Thingsboard {
                     break;
 
                 case "COMPLETED":
+                    // remove the parent sequence from the transitioning_sequences
+                    var index = msg.custom_irrig_info.transitioning_sequences.indexOf(metadata.parent_sequence);
+                    if (index > -1) {
+                        msg.custom_irrig_info.transitioning_sequences.splice(index, 1);
+                    }
+                    
+                    console.log(`[${new Date().toLocaleTimeString()}] *** Transition of sequence ${metadata.parent_sequence} completed.`);
+                    console.log("=".repeat(120));
+                    console.log(`Children sequences initiated in parallel: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}
+                        waiting for uplink from water level sensors: ${this.wlSensorsWaiting}`);
+                        
                     // pause and receive uplink for all the wlSensors
-                    console.log(`[${new Date().toLocaleTimeString()}] *** Sequence ${metadata.parent_sequence} completed`);
                     for (var j = 0; j < this.wlSensorsWaiting.length; j++) {
                         metadata.originatorName = this.wlSensorsWaiting[j];
                         this.pauseAndReceiveUplink(msg={
                             "status": "Wet"
                         }, metadata, msgType='POST_TELEMETRY_REQUEST');
                     }
+
+                    // reset the wlSensorsWaiting array
+                    this.wlSensorsWaiting = [];
         }
     }
 }
@@ -402,14 +425,63 @@ class Thingsboard {
             if (valvesToVisit.length === 0) {
                 console.log(`[${new Date().toLocaleTimeString()}] All valves have been visited for set ${metadata.curr_set}`);
                 msg.custom_irrig_info.sets[metadata.curr_set].irrigationStatus = msg.status;  // set the irrigation status to on or off
-                metadata.curr_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].children[0];
-                msgType = 'CHECK_TRANSITION_FOR_UPLINK';
-                this.seqRuleChain(msg, metadata, msgType);
+                metadata.curr_sequence = msg.custom_irrig_info.sets[metadata.curr_set].sequence;
+                metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
+
+                // is parent sequence in transition? this also means that it is the first set in the sequence; may change it in the future
+                if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.parent_sequence)) {
+                    msgType = 'CHECK_TRANSITION_FOR_UPLINK';
+                    this.seqRuleChain(msg, metadata, msgType);
+                } else {
+                    // is msg status on?
+                    if (msg.status === "on") {
+                        // find previous set and close it
+                        var prev_set_index = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.indexOf(metadata.curr_set)-1;
+                        if (prev_set_index >= 0) {
+                            var prev_set = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets[prev_set_index];
+                            metadata.curr_set = prev_set;
+                            msgType = 'CLOSE_SET';
+                            this.setRuleChain(msg, metadata, msgType);
+                        }
+
+                    } else {
+                        msgType = 'TRANSITION_SET';
+                        this.setRuleChain(msg, metadata, msgType);
+                    }
+                }
+
             }
         
         }
+        else if (msgType === 'TRANSITION_SET') {
+            var curr_set_name = metadata.curr_set;
+            var curr_set_obj = msg.custom_irrig_info.sets[curr_set_name];
+
+            // find the sequence that the set belongs to
+            var sequence = curr_set_obj.sequence;
+            var curr_set_index = msg.custom_irrig_info.sequences[sequence].sets.indexOf(metadata.curr_set);
+
+            // if there is a next set in the sequence
+            if (curr_set_index < msg.custom_irrig_info.sequences[sequence].sets.length - 1) {
+                var next_set_name = msg.custom_irrig_info.sequences[sequence].sets[curr_set_index + 1];
+
+                metadata.curr_set = next_set_name;
+                msgType = 'OPEN_SET';
+                this.setRuleChain(msg, metadata, msgType);
+                // closing the previous set will be handled in the CHECK_VALVES_TO_VISIT after all valves have been visited in the next set
+            
+            } else {
+                // if there is no next set in the sequence, transition to the next sequence
+                console.log(`[${new Date().toLocaleTimeString()}] Sequence ${sequence} completed - go for sequence transition.`);
+                console.log("=".repeat(120));
+                console.log(`Transitioning to the next sequences: ${msg.custom_irrig_info.sequences[sequence].children}`);
+                // change the status of the set to off
+                curr_set_obj.irrigationStatus = "off";
+                metadata.curr_sequence = sequence;
+                this.seqRuleChain(msg, metadata, 'TRANSITION_SEQUENCE');
+            }              
     }
 }
-
+}
 
 module.exports = Thingsboard;

@@ -15,7 +15,7 @@ const pumps = {
 
 // instantiate WLSensors
 const wlsensors = {
-    "c1fa-was1": new WLSensor("c1fa-was1", "wl-sensor1", "water alert sensor", -19.575590, 147.3087600, "Dry", ['c1fa-set1']), // name, label, type, lat, long, status, toRelation
+    "c1fa-was1": new WLSensor("c1fa-was1", "wl-sensor1", "water alert sensor", -19.575590, 147.3087600, "Dry", ['c1fa-set1']), // name, label, type, lat, long, status, toRelations
     "c1fa-was2": new WLSensor("c1fa-was2", "wl-sensor2", "water alert sensor", -19.569946, 147.3101766, "Dry", ['c1fa-set2']),
     "c1fa-was3": new WLSensor("c1fa-was3", "wl-sensor3", "water alert sensor", -19.5700269, 147.3110885, "Dry", ['c1fa-set3']),
     "c1fa-was4": new WLSensor("c1fa-was4", "wl-sensor4", "water alert sensor", -19.570128, 147.3119468, "Dry", ['c1fa-set4']),
@@ -97,7 +97,7 @@ const irrig_info = {
             curr_set_idx: 0
         },
         sequence2: {
-            sets: ["c1fa-set2", "c1fa-set3", "c1fa-set4", "c1fa-set5", "c1fa-set6"],
+            sets: ["c1fa-set6", "c1fa-set5", "c1fa-set4", "c1fa-set3", "c1fa-set2"],
             pumps: ["c1fa-pump1", "c1fa-pump2"],
             children: ["sequence4"],
             parent: "sequence1",
