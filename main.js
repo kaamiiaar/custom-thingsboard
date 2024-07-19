@@ -79,9 +79,9 @@ const sets = {
 // Define irrigation information with references to Set object keys
 const irrig_info = {
     sets: sets,
-    visitedSequences: [],
+    visited_sequences: [],
     transitioning_sequences: [],
-    allSequences: ["root", "sequence1", "sequence2", "sequence3", "sequence4", "sequence5"],
+    all_sequences: ["root", "sequence1", "sequence2", "sequence3", "sequence4", "sequence5"],
     sequences: {
         root: {
             children: ["sequence1"],

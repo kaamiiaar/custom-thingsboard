@@ -19,27 +19,36 @@ class Thingsboard {
             // console.log(`[${new Date().toLocaleTimeString()}] Valve uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
             this.valveRuleChain(msg, metadata, msgType);
         } else if (deviceType === 'water alert sensor') {
-            // console.log(`[${new Date().toLocaleTimeString()}] Water level sensor uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
+            // console.log(`[${new Date().toLocaleTimeString()}] water alert sensor uplink message for device ${deviceName}: ${JSON.stringify(msg)}`);
             this.wlSensorRuleChain(msg, metadata, msgType);
         }
     }
 
     sendDownlink(msg, metadata, msgType='') {
         console.log(`[${new Date().toLocaleTimeString()}] Sending downlink to ${metadata.originatorName} with message: ${JSON.stringify(msg)}`);        
+        // pause and receive uplink
+        this.pauseAndReceiveUplink(msg, metadata, msgType='POST_TELEMETRY_REQUEST');
     }
 
     wlSensorRuleChain(msg, metadata, msgType) {
         if (msgType === 'POST_TELEMETRY_REQUEST') {
-            console.log(`[${new Date().toLocaleTimeString()}] [UPLINK] Water level sensor uplink received: ${JSON.stringify(msg)} from water level sensor ${metadata.originatorName}`);
-            console.log(`[${new Date().toLocaleTimeString()}] *** Water level sensor rule chain triggered with message: ${JSON.stringify(msg)}`);
+            console.log(`[${new Date().toLocaleTimeString()}] [UPLINK] water alert sensor uplink received: ${JSON.stringify(msg)} from water alert sensor ${metadata.originatorName}`);
+            console.log(`[${new Date().toLocaleTimeString()}] *** water alert sensor rule chain triggered with message: ${JSON.stringify(msg)}`);
+            
             var wlSensor = this.devices[metadata.originatorName]; 
             wlSensor.status = msg.status;
+
+            // remove the water alert sensor from the waiting list
+            var index = this.wlSensorsWaiting.indexOf(metadata.originatorName);
+            if (index > -1) {
+                this.wlSensorsWaiting.splice(index, 1);
+            }
 
             var curr_set = this.assets[wlSensor.toRelations[0]];    // which set?
             var curr_farm = this.assets[curr_set.toRelations[0]];    // which farm?
             msg.custom_irrig_info = curr_farm.custom_irrig_info;    // get the irrigation information
 
-            // check if the water level sensor is wet
+            // check if the water alert sensor is wet
             if (msg.status === "Wet") {
                 // transition that set
                 metadata.curr_set = curr_set.name;
@@ -74,10 +83,11 @@ class Thingsboard {
                 msgType = 'CHECK_TRANSITION_FOR_UPLINK';
             }
             else if (msg.status === "off") {
-                // see which sequence gave the command to the pump
-                for (var sequence in msg.custom_irrig_info.transitioning_sequences) {
+                // see which sequence gave the command to the pump, do this by seeing which transitioning sequence the pump belongs to
+                for (var sequenceIndex = 0; sequenceIndex < msg.custom_irrig_info.transitioning_sequences.length; sequenceIndex++) {
+                    var sequence = msg.custom_irrig_info.transitioning_sequences[sequenceIndex];
                     if (msg.custom_irrig_info.sequences[sequence].seqTransitionPlan.pumpsToOff.includes(metadata.originatorName)) {
-                        parent.curr_sequence = sequence;
+                        metadata.parent_sequence = sequence;
                         break;
                     }
                 }
@@ -140,7 +150,7 @@ class Thingsboard {
                 allFirstSets.push(firstSet);
                 
                 // To keep track of which valves are to be visited within a set
-                msg.custom_irrig_info.sets[firstSet].valvesToVisit = [...msg.custom_irrig_info.sets[firstSet].valves];
+                // msg.custom_irrig_info.sets[firstSet].valvesToVisit = [...msg.custom_irrig_info.sets[firstSet].valves];
                 childrenPumps = childrenPumps.concat(sequence.pumps);
             }
 
@@ -156,25 +166,25 @@ class Thingsboard {
 
             var pumpsToOn = arrayDifference(childrenPumps, parentPumps);
             var pumpsToOff = arrayDifference(parentPumps, childrenPumps);
-
+            var theLastSet = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.length > 0 ? [msg.custom_irrig_info.sequences[metadata.curr_sequence].sets[msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.length - 1]] : [];
 
             // have to save this attribute inside the parent sequence
             var seqTransitionPlan = {
                 
                 // 1. open all first sets
-                "setsToOpen": allFirstSets,
+                "setsToOpen": [...allFirstSets],
                 
                 // 2. turn on all the pumpsToOn
-                "pumpsToOn": pumpsToOn,
+                "pumpsToOn": [...pumpsToOn],
                 
                 // 3. turn off all the pumpsToOff
-                "pumpsToOff": pumpsToOff,
+                "pumpsToOff": [...pumpsToOff],
                 
                 // 4. close all sets inside the curr_sequence
-                "setsToClose": msg.custom_irrig_info.sequences[metadata.curr_sequence].sets
+                "setsToClose": theLastSet
             };
 
-            console.log(`[${new Date().toLocaleTimeString()}] Transition plan for sequence ${metadata.curr_sequence}: ${JSON.stringify(seqTransitionPlan, null, 2)}`);
+            console.log(`[${new Date().toLocaleTimeString()}] Transition plan for sequence ${metadata.curr_sequence} to children sequences: ${children_sequences} is: ${JSON.stringify(seqTransitionPlan, null, 2)}`);
 
             msg.custom_irrig_info.sequences[metadata.curr_sequence].seqTransitionPlan = seqTransitionPlan;
             msg.custom_irrig_info.sequences[metadata.curr_sequence]["status"] = "OPENING_FIRST_SETS";     // options: OPENING_FIRST_SETS, TURNING_PUMPS_ON, TURNING_PUMPS_OFF, CLOSING_PREV_VALVES
@@ -182,26 +192,19 @@ class Thingsboard {
             // add this sequence to the transitioning_sequences
             msg.custom_irrig_info.transitioning_sequences.push(metadata.curr_sequence);
 
-            // send downlink to open all the first sets
-            for (var i = 0; i < allFirstSets.length; i++) {
-                metadata.curr_set = allFirstSets[i];       // can also change the originator to the set in TB
-                msgType = 'OPEN_SET';
-                this.setRuleChain(msg, metadata, msgType);
-            }
+            // reset the waiting list for water alert sensors
+            this.wlSensorsWaiting = [];
 
-            // prepare message for uplink simulation
-            for (var i = 0; i < allFirstSets.length; i++) {
-                var valves = msg.custom_irrig_info.sets[allFirstSets[i]].valves;
-                this.wlSensorsWaiting.push(msg.custom_irrig_info.sets[allFirstSets[i]].wlSensors[0]);
+            // // send downlink to open all the first sets
+            // for (var i = 0; i < allFirstSets.length; i++) {
+            //     metadata.curr_set = allFirstSets[i];       // can also change the originator to the set in TB
+            //     msgType = 'OPEN_SET';
+            //     this.setRuleChain(msg, metadata, msgType);
 
-                // pause and receive uplink
-                for (var j = 0; j < valves.length; j++) {
-                    metadata.originatorName = valves[j];
-                    this.pauseAndReceiveUplink(msg={
-                        "status": "on"
-                    }, metadata, msgType='POST_TELEMETRY_REQUEST');
-                }
-            }
+            // }    
+            msg.custom_irrig_info.sequences[metadata.curr_sequence].status = "OPENING_FIRST_SETS";
+            metadata.parent_sequence = metadata.curr_sequence;
+            this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');   
         }
 
         else if (msgType === 'CHECK_TRANSITION_FOR_UPLINK') {
@@ -211,7 +214,7 @@ class Thingsboard {
             // }
             var seqTransitionPlanParent = msg.custom_irrig_info.sequences[metadata.parent_sequence].seqTransitionPlan;
             var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
-            console.log(`[${new Date().toLocaleTimeString()}] *** Checking transition for uplink with message type: ${msgType} for sequence ${metadata.parent_sequence} having status: ${seqTransitionParentStatus}`);
+            console.log(`[${new Date().toLocaleTimeString()}] *** Checking transition for uplink with message type: ${msgType} for parent sequence ${metadata.parent_sequence} having status: ${seqTransitionParentStatus}`);
 
             switch (seqTransitionParentStatus) {
                 case "OPENING_FIRST_SETS":
@@ -224,7 +227,6 @@ class Thingsboard {
 
                     if (iterable.length === 0) {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_ON";
-                        metadata.TransitionStepStarted = true;
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     }
                     break;
@@ -237,7 +239,6 @@ class Thingsboard {
                     console.log(`[${new Date().toLocaleTimeString()}] How many pumps left to turn on? ${iterable.length}`);
                     if (iterable.length === 0) {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_OFF";
-                        metadata.TransitionStepStarted = true;
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     }
                     break;
@@ -250,7 +251,6 @@ class Thingsboard {
                     console.log(`[${new Date().toLocaleTimeString()}] How many pumps left to turn off? ${iterable.length}`);
                     if (iterable.length === 0) {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "CLOSING_PREV_VALVES";
-                        metadata.TransitionStepStarted = true;
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     }
                     break;
@@ -263,7 +263,6 @@ class Thingsboard {
                     console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
                     if (iterable.length === 0) {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "COMPLETED";
-                        metadata.TransitionStepStarted = true;
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     }
                     break;
@@ -281,6 +280,22 @@ class Thingsboard {
             var seqTransitionParentStatus = msg.custom_irrig_info.sequences[metadata.parent_sequence].status;
             
             switch (seqTransitionParentStatus) {
+                case "OPENING_FIRST_SETS":
+                    var allFirstSets = [...seqTransitionPlanParent.setsToOpen];
+                    var iterable = seqTransitionPlanParent.setsToOpen;
+
+                    console.log(`[${new Date().toLocaleTimeString()}] How many sets left to open? ${iterable.length}`);
+                    if (iterable.length === 0) {
+                        msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_ON";
+                        this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
+                    } else {
+                        for (var i = 0; i < allFirstSets.length; i++) {
+                            metadata.curr_set = allFirstSets[i];
+                            msgType = 'OPEN_SET';
+                            this.setRuleChain(msg, metadata, msgType);
+                        }
+                    }
+                    break;
                 case "TURNING_PUMPS_ON":
                     var allPumpsToOn = [...seqTransitionPlanParent.pumpsToOn];
                     var iterable = seqTransitionPlanParent.pumpsToOn;
@@ -290,21 +305,13 @@ class Thingsboard {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_OFF";
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     } else {
-                        for (var i = 0; i < iterable.length; i++) {
-                            metadata.originatorName = iterable[i];
+                        for (var i = 0; i < allPumpsToOn.length; i++) {
+                            metadata.originatorName = allPumpsToOn[i];
                             msg = {
                                 "status": "on"
                             };
                             this.sendDownlink(msg, metadata);
                         };
-
-                        // pause and receive uplink for simulation
-                        for (var j = 0; j < allPumpsToOn.length; j++) {
-                            metadata.originatorName = allPumpsToOn[j];
-                            this.pauseAndReceiveUplink(msg={
-                                "status": "on"
-                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
-                        }
                     }
                     break;
                 case "TURNING_PUMPS_OFF":
@@ -316,25 +323,19 @@ class Thingsboard {
                         msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "CLOSING_PREV_VALVES";
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     } else {
-                        for (var i = 0; i < iterable.length; i++) {
-                            metadata.originatorName = iterable[i];
+                        for (var i = 0; i < allPumpsToOff.length; i++) {
+                            metadata.originatorName = allPumpsToOff[i];
                             msg = {
                                 "status": "off"
                             };
                             this.sendDownlink(msg, metadata);
                         };
-                        // pause and receive uplink for simulation
-                        for (var j = 0; j < allPumpsToOff.length; j++) {
-                            metadata.originatorName = allPumpsToOff[j];
-                            this.pauseAndReceiveUplink(msg={
-                                "status": "off"
-                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
-                        }
                     }
                     break;
                     
                 case "CLOSING_PREV_VALVES":
                     var iterable = seqTransitionPlanParent.setsToClose;
+                    var allSetsToClose = [...seqTransitionPlanParent.setsToClose];
                     var index = iterable.indexOf(metadata.curr_set);
                     
                     console.log(`[${new Date().toLocaleTimeString()}] How many sets left to close? ${iterable.length}`);
@@ -343,8 +344,8 @@ class Thingsboard {
                         this.seqRuleChain(msg, metadata, 'NEXT_STEP_TRANSITION');
                     } else {
                         // send downlink to close all these sets
-                        for (var i = 0; i < iterable.length; i++) {
-                            metadata.curr_set = iterable[i];       // can also change the originator to the set in TB
+                        for (var i = 0; i < allSetsToClose.length; i++) {
+                            metadata.curr_set = allSetsToClose[i];       // can also change the originator to the set in TB
                             msgType = 'CLOSE_SET';
                             this.setRuleChain(msg, metadata, msgType);
                         }
@@ -352,27 +353,39 @@ class Thingsboard {
                     break;
 
                 case "COMPLETED":
-                    // remove the parent sequence from the transitioning_sequences
+                    // remove the parent sequence from the transitioning_sequences and add it to the visited sequences
                     var index = msg.custom_irrig_info.transitioning_sequences.indexOf(metadata.parent_sequence);
                     if (index > -1) {
                         msg.custom_irrig_info.transitioning_sequences.splice(index, 1);
                     }
-                    
-                    console.log(`[${new Date().toLocaleTimeString()}] *** Transition of sequence ${metadata.parent_sequence} completed.`);
-                    console.log("=".repeat(120));
-                    console.log(`Children sequences initiated in parallel: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}
-                        waiting for uplink from water level sensors: ${this.wlSensorsWaiting}`);
-                        
-                    // pause and receive uplink for all the wlSensors
-                    for (var j = 0; j < this.wlSensorsWaiting.length; j++) {
-                        metadata.originatorName = this.wlSensorsWaiting[j];
-                        this.pauseAndReceiveUplink(msg={
-                            "status": "Wet"
-                        }, metadata, msgType='POST_TELEMETRY_REQUEST');
-                    }
+                    msg.custom_irrig_info.visited_sequences.push(metadata.parent_sequence);
 
-                    // reset the wlSensorsWaiting array
-                    this.wlSensorsWaiting = [];
+                    // if all sequences have been visited
+                    if (msg.custom_irrig_info.visited_sequences.length === msg.custom_irrig_info.all_sequences.length) {
+                        console.log(`[${new Date().toLocaleTimeString()}] *** Farm irrigation completed - all sequences visited.`);
+                        console.log("=".repeat(120));
+                        console.log("=".repeat(120));
+                    } else {
+                    
+                        console.log(`[${new Date().toLocaleTimeString()}] *** Transition of sequence ${metadata.parent_sequence} completed.`);
+                        console.log("=".repeat(120));
+                        console.log(`Children sequences initiated in parallel: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}
+                            waiting for uplink from water alert sensors: ${this.wlSensorsWaiting}`);
+
+                        // pause and receive uplink for all the wlSensors
+                        var allWlSensors = [...this.wlSensorsWaiting];
+                        for (var j = 0; j < allWlSensors.length; j++) {
+                            metadata.originatorName = allWlSensors[j];
+                            // remove the wlSensor from the waiting list
+                            var index = this.wlSensorsWaiting.indexOf(metadata.originatorName);
+                            if (index > -1) {
+                                this.wlSensorsWaiting.splice(index, 1);
+                            }
+                            this.pauseAndReceiveUplink(msg={
+                                "status": "Wet"
+                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
+                        }
+                }
         }
     }
 }
@@ -384,8 +397,12 @@ class Thingsboard {
             var set = msg.custom_irrig_info.sets[metadata.curr_set];
             console.log(`[${new Date().toLocaleTimeString()}] Set information: ${JSON.stringify(set, null, 2)}`);
 
+            // add the water alert sensor to the waiting list
+            this.wlSensorsWaiting.push(set.wlSensors[0]);
+
             // send downlink to open the valves
             var valves = set.valves;
+            set.valvesToVisit = [...set.valves];
             for (var i = 0; i < valves.length; i++) {
                 metadata.originatorName = valves[i];
                 msg = {
@@ -393,11 +410,13 @@ class Thingsboard {
                 };
                 this.sendDownlink(msg, metadata);
             }
+
         }
 
         else if (msgType === 'CLOSE_SET') {
             // Find the set
             var set = msg.custom_irrig_info.sets[metadata.curr_set];
+            set.valvesToVisit = [...set.valves];
             console.log(`[${new Date().toLocaleTimeString()}] Set information: ${JSON.stringify(set, null, 2)}`);
 
             // send downlink to close the valves
@@ -429,27 +448,48 @@ class Thingsboard {
                 metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
 
                 // is parent sequence in transition? this also means that it is the first set in the sequence; may change it in the future
-                if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.parent_sequence)) {
-                    msgType = 'CHECK_TRANSITION_FOR_UPLINK';
-                    this.seqRuleChain(msg, metadata, msgType);
-                } else {
-                    // is msg status on?
-                    if (msg.status === "on") {
-                        // find previous set and close it
-                        var prev_set_index = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.indexOf(metadata.curr_set)-1;
+                if (msg.status === 'on'){
+                    // if parent is transitioning
+                    if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.parent_sequence)) {
+                        msgType = 'CHECK_TRANSITION_FOR_UPLINK';
+                        this.seqRuleChain(msg, metadata, msgType);
+                    } else {
+                    var prev_set_index = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.indexOf(metadata.curr_set)-1;
                         if (prev_set_index >= 0) {
                             var prev_set = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets[prev_set_index];
                             metadata.curr_set = prev_set;
                             msgType = 'CLOSE_SET';
                             this.setRuleChain(msg, metadata, msgType);
                         }
+                    }
+                } else if (msg.status === 'off') {
+                    // if curr sequence is transitioning
+                    if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.curr_sequence)) {
+                        metadata.parent_sequence = metadata.curr_sequence;
+                        msgType = 'CHECK_TRANSITION_FOR_UPLINK';
+                        this.seqRuleChain(msg, metadata, msgType);
+                    } 
+                    // if curr set is transitioning
+                    else if (msg.custom_irrig_info.sets[metadata.curr_set].inTransition) {
+                        console.log(`[${new Date().toLocaleTimeString()}] Set ${metadata.curr_set} transition is completed - waiting for the next set water alert sensor.`);
+                        console.log("=".repeat(120));
 
-                    } else {
+                        // if exists, call uplink for the next water alert sensor in waiting
+                        // technically this shouldn't work but I'm just using this approach for the simulation
+                        if (this.wlSensorsWaiting.length > 0) {
+                            metadata.originatorName = this.wlSensorsWaiting[0];
+                            this.pauseAndReceiveUplink(msg={
+                                "status": "Wet"
+                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
+                        }
+                        
+                    }
+                    else {
                         msgType = 'TRANSITION_SET';
                         this.setRuleChain(msg, metadata, msgType);
                     }
+                        
                 }
-
             }
         
         }
@@ -463,6 +503,8 @@ class Thingsboard {
 
             // if there is a next set in the sequence
             if (curr_set_index < msg.custom_irrig_info.sequences[sequence].sets.length - 1) {
+                // set isTransition to true
+                curr_set_obj.inTransition = true;
                 var next_set_name = msg.custom_irrig_info.sequences[sequence].sets[curr_set_index + 1];
 
                 metadata.curr_set = next_set_name;
@@ -474,7 +516,8 @@ class Thingsboard {
                 // if there is no next set in the sequence, transition to the next sequence
                 console.log(`[${new Date().toLocaleTimeString()}] Sequence ${sequence} completed - go for sequence transition.`);
                 console.log("=".repeat(120));
-                console.log(`Transitioning to the next sequences: ${msg.custom_irrig_info.sequences[sequence].children}`);
+                // console.log(`Transitioning to the next sequences: ${msg.custom_irrig_info.sequences[sequence].children}`);
+
                 // change the status of the set to off
                 curr_set_obj.irrigationStatus = "off";
                 metadata.curr_sequence = sequence;
