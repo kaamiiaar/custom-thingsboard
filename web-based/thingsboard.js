@@ -52,6 +52,7 @@ export class Thingsboard {
             if (msg.status === "Wet") {
                 // transition that set
                 metadata.curr_set = curr_set.name;
+                EventModule.addEvent('set', metadata.curr_set);
                 msgType = 'TRANSITION_SET';
                 this.setRuleChain(msg, metadata, msgType);
             }
@@ -441,6 +442,7 @@ export class Thingsboard {
 
             console.log(`[${new Date().toLocaleTimeString()}] How many valves left to visit? ${valvesToVisit.length}`);
             
+            // if all valves have been visited for a set
             if (valvesToVisit.length === 0) {
                 console.log(`[${new Date().toLocaleTimeString()}] All valves have been visited for set ${metadata.curr_set}`);
                 msg.custom_irrig_info.sets[metadata.curr_set].irrigationStatus = msg.status;  // set the irrigation status to on or off
@@ -472,11 +474,10 @@ export class Thingsboard {
                     // if curr set is transitioning
                     else if (msg.custom_irrig_info.sets[metadata.curr_set].inTransition) {
                         console.log(`[${new Date().toLocaleTimeString()}] Set ${metadata.curr_set} transition is completed - waiting for the next set water alert sensor.`);
-                        EventModule.addEvent('set', metadata.curr_set);
                         console.log("=".repeat(120));
 
                         // if exists, call uplink for the next water alert sensor in waiting
-                        // technically this shouldn't work but I'm just using this approach for the simulation
+                        // in real world, this shouldn't work but I'm just using this approach for the simulation
                         if (this.wlSensorsWaiting.length > 0) {
                             metadata.originatorName = this.wlSensorsWaiting[0];
                             this.pauseAndReceiveUplink(msg={
@@ -516,7 +517,6 @@ export class Thingsboard {
             } else {
                 // if there is no next set in the sequence, transition to the next sequence
                 console.log(`[${new Date().toLocaleTimeString()}] Sequence ${sequence} completed - go for sequence transition.`);
-                EventModule.addEvent('set', curr_set_name);
                 EventModule.addEvent('sequence', sequence);
 
                 console.log("=".repeat(120));

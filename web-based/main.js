@@ -75,9 +75,8 @@ const sets = {
     "c1fa-set14": new Set("c1fa-set14", "Set 14", "irrigation set", 10, "off", "sequence5", ["c1fa-valve13-e"], ["c1fa-pump4"], ["c1fa-was14"])
 };
 
-
 // Define irrigation information with references to Set object keys
-const irrig_info = {
+export const irrig_info = {
     sets: sets,
     visited_sequences: [],
     transitioning_sequences: [],
