@@ -1,3 +1,9 @@
+EventModule.addEvent('set', metadata.curr_set);
+
+EventModule.addEvent('sequence', sequence);
+
+
+
 // if there are no sets to open
 if (seqTransitionPlanParent.setsToOpen.length === 0) {
     // msg.custom_irrig_info.sequences[metadata.parent_sequence].status = "TURNING_PUMPS_ON";

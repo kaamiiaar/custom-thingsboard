@@ -38,11 +38,11 @@ class Thingsboard {
             var wlSensor = this.devices[metadata.originatorName]; 
             wlSensor.status = msg.status;
 
-            // remove the water alert sensor from the waiting list
-            var index = this.wlSensorsWaiting.indexOf(metadata.originatorName);
-            if (index > -1) {
-                this.wlSensorsWaiting.splice(index, 1);
-            }
+            // // remove the water alert sensor from the waiting array
+            // var index = this.wlSensorsWaiting.indexOf(metadata.originatorName);
+            // if (index > -1) {
+            //     this.wlSensorsWaiting.splice(index, 1);
+            // }
 
             var curr_set = this.assets[wlSensor.toRelations[0]];    // which set?
             var curr_farm = this.assets[curr_set.toRelations[0]];    // which farm?
@@ -193,7 +193,7 @@ class Thingsboard {
             msg.custom_irrig_info.transitioning_sequences.push(metadata.curr_sequence);
 
             // reset the waiting list for water alert sensors
-            this.wlSensorsWaiting = [];
+            // this.wlSensorsWaiting = [];
 
             // // send downlink to open all the first sets
             // for (var i = 0; i < allFirstSets.length; i++) {
@@ -372,19 +372,12 @@ class Thingsboard {
                         console.log(`Children sequences initiated in parallel: ${msg.custom_irrig_info.sequences[metadata.parent_sequence].children}
                             waiting for uplink from water alert sensors: ${this.wlSensorsWaiting}`);
 
-                        // pause and receive uplink for all the wlSensors
-                        var allWlSensors = [...this.wlSensorsWaiting];
-                        for (var j = 0; j < allWlSensors.length; j++) {
-                            metadata.originatorName = allWlSensors[j];
-                            // remove the wlSensor from the waiting list
-                            var index = this.wlSensorsWaiting.indexOf(metadata.originatorName);
-                            if (index > -1) {
-                                this.wlSensorsWaiting.splice(index, 1);
-                            }
-                            this.pauseAndReceiveUplink(msg={
-                                "status": "Wet"
-                            }, metadata, msgType='POST_TELEMETRY_REQUEST');
-                        }
+                        // pause and receive uplink for the next water alert sensor in waiting queue, also shift it out
+                        metadata.originatorName = this.wlSensorsWaiting.shift();
+
+                        this.pauseAndReceiveUplink(msg={
+                            "status": "Wet"
+                        }, metadata, msgType='POST_TELEMETRY_REQUEST');
                 }
         }
     }
@@ -396,9 +389,6 @@ class Thingsboard {
             // Find the set
             var set = msg.custom_irrig_info.sets[metadata.curr_set];
             console.log(`[${new Date().toLocaleTimeString()}] Set information: ${JSON.stringify(set, null, 2)}`);
-
-            // add the water alert sensor to the waiting list
-            this.wlSensorsWaiting.push(set.wlSensors[0]);
 
             // send downlink to open the valves
             var valves = set.valves;
@@ -446,15 +436,19 @@ class Thingsboard {
                 msg.custom_irrig_info.sets[metadata.curr_set].irrigationStatus = msg.status;  // set the irrigation status to on or off
                 metadata.curr_sequence = msg.custom_irrig_info.sets[metadata.curr_set].sequence;
                 metadata.parent_sequence = msg.custom_irrig_info.sequences[metadata.curr_sequence].parent;
-
-                // is parent sequence in transition? this also means that it is the first set in the sequence; may change it in the future
+                
+                
                 if (msg.status === 'on'){
-                    // if parent is transitioning
+                    // add the water alert sensors to the waiting list
+                    var wlSensor = msg.custom_irrig_info.sets[metadata.curr_set].wlSensors[0];
+                    this.wlSensorsWaiting.push(wlSensor);
+               
+                    // if parent is transitioning; this also means that it is the first set in the sequence; may change it in the future
                     if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.parent_sequence)) {
                         msgType = 'CHECK_TRANSITION_FOR_UPLINK';
                         this.seqRuleChain(msg, metadata, msgType);
                     } else {
-                    var prev_set_index = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.indexOf(metadata.curr_set)-1;
+                        var prev_set_index = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets.indexOf(metadata.curr_set)-1;
                         if (prev_set_index >= 0) {
                             var prev_set = msg.custom_irrig_info.sequences[metadata.curr_sequence].sets[prev_set_index];
                             metadata.curr_set = prev_set;
@@ -462,6 +456,7 @@ class Thingsboard {
                             this.setRuleChain(msg, metadata, msgType);
                         }
                     }
+
                 } else if (msg.status === 'off') {
                     // if curr sequence is transitioning
                     if (msg.custom_irrig_info.transitioning_sequences.includes(metadata.curr_sequence)) {
@@ -477,7 +472,7 @@ class Thingsboard {
                         // if exists, call uplink for the next water alert sensor in waiting
                         // technically this shouldn't work but I'm just using this approach for the simulation
                         if (this.wlSensorsWaiting.length > 0) {
-                            metadata.originatorName = this.wlSensorsWaiting[0];
+                            metadata.originatorName = this.wlSensorsWaiting.shift();
                             this.pauseAndReceiveUplink(msg={
                                 "status": "Wet"
                             }, metadata, msgType='POST_TELEMETRY_REQUEST');
