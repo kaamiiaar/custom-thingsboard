@@ -128,11 +128,14 @@ class Thingsboard {
 
         // console.log(`Farm information: ${JSON.stringify(farm.irrig_info, null, 2)}, ${farm.auto_irrig}`);
 
-        metadata.curr_sequence = "root";
-        msgType = 'TRANSITION_SEQUENCE';
-        msg.custom_irrig_info = farm.custom_irrig_info;
-        this.seqRuleChain(msg, metadata, msgType);
-
+        // I also need to add the if condition for auto_irrig
+        if (farm.auto_irrig) {
+            // start the irrigation process
+            metadata.curr_sequence = "root";
+            msgType = 'TRANSITION_SEQUENCE';
+            msg.custom_irrig_info = farm.custom_irrig_info;
+            this.seqRuleChain(msg, metadata, msgType);
+        }
     }
 
     seqRuleChain(msg, metadata, msgType) {

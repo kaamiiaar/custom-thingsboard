@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sequence Viewer</title>
+    <style>
+        body {
+            font-family: "Roboto", sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        #sequence-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .sequence {
+            margin: 10px 0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .sequence::before {
+            content: "";
+            position: absolute;
+            left: -20px;
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background-color: #aaa;
+        }
+        .sequence::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: -20px;
+            width: 20px;
+            height: 2px;
+            background-color: #aaa;
+        }
+        .sequence h3 {
+            margin: 0;
+            color: #555;
+            font-size: 1.2em;
+        }
+        .set {
+            padding: 8px 10px;
+            border-left: 3px solid #888;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+            margin-top: 5px;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .set::before {
+            content: "≡";
+            margin-right: 10px;
+            color: #888;
+        }
+        .children {
+            margin-left: 20px;
+        }
+        .dragging {
+            opacity: 0.5;
+        }
+        .drop-indicator {
+            height: 0;
+            border-top: 2px solid black;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="sequence-container"></div>
+    <script src="script-test.js"></script>
+</body>
+</html>

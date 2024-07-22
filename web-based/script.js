@@ -1,73 +1,102 @@
 const sequences = {
   root: {
-      children: ["sequence1"],
-      pumps: [],
-      sets: [],
-      curr_set_idx: 0,
-      completed: false
+    children: ["sequence1"],
+    pumps: [],
+    sets: [],
+    curr_set_idx: 0,
+    completed: false
   },
   sequence1: {
-      sets: ["c1fa-set7"],
-      pumps: ["c1fa-pump2", "c1fa-pump3"],
-      children: ["sequence2", "sequence3"],
-      parent: "root",
-      curr_set_idx: 0,
-      completed: false
+    sets: ["c1fa-set7"],
+    pumps: ["c1fa-pump2", "c1fa-pump3"],
+    children: ["sequence2", "sequence3"],
+    parent: "root",
+    curr_set_idx: 0,
+    completed: false
   },
   sequence2: {
-      sets: ["c1fa-set6", "c1fa-set5", "c1fa-set4", "c1fa-set3", "c1fa-set2"],
-      pumps: ["c1fa-pump1", "c1fa-pump2"],
-      children: ["sequence4"],
-      parent: "sequence1",
-      curr_set_idx: 0,
-      completed: false
+    sets: ["c1fa-set6", "c1fa-set5", "c1fa-set4", "c1fa-set3", "c1fa-set2"],
+    pumps: ["c1fa-pump1", "c1fa-pump2"],
+    children: ["sequence4"],
+    parent: "sequence1",
+    curr_set_idx: 0,
+    completed: false
   },
   sequence3: {
-      sets: ["c1fa-set8", "c1fa-set9", "c1fa-set10", "c1fa-set11", "c1fa-set12", "c1fa-set13"],
-      pumps: ["c1fa-pump3", "c1fa-pump4"],
-      children: ["sequence5"],
-      parent: "sequence1",
-      curr_set_idx: 0,
-      completed: false
+    sets: ["c1fa-set8", "c1fa-set9", "c1fa-set10", "c1fa-set11", "c1fa-set12", "c1fa-set13"],
+    pumps: ["c1fa-pump3", "c1fa-pump4"],
+    children: ["sequence5"],
+    parent: "sequence1",
+    curr_set_idx: 0,
+    completed: false
   },
   sequence4: {
-      sets: ["c1fa-set1"],
-      pumps: ["c1fa-pump1"],
-      children: [],
-      parent: "sequence2",
-      curr_set_idx: 0,
-      completed: false
+    sets: ["c1fa-set1"],
+    pumps: ["c1fa-pump1"],
+    children: [],
+    parent: "sequence2",
+    curr_set_idx: 0,
+    completed: false
   },
   sequence5: {
-      sets: ["c1fa-set14"],
-      pumps: ["c1fa-pump4"],
-      children: [],
-      parent: "sequence3",
-      curr_set_idx: 0,
-      completed: false
+    sets: ["c1fa-set14"],
+    pumps: ["c1fa-pump4"],
+    children: [],
+    parent: "sequence3",
+    curr_set_idx: 0,
+    completed: false
   }
 };
 
 function createSequenceElement(sequenceKey, sequence) {
   const sequenceElement = document.createElement('div');
   sequenceElement.classList.add('sequence');
-  sequenceElement.id = sequenceKey; // Add an ID to the sequence element
-
-  if (sequenceKey === 'root') {
-      sequenceElement.classList.add('root');
-  }
+  sequenceElement.id = sequenceKey;
 
   const title = document.createElement('h3');
   title.textContent = sequenceKey;
   sequenceElement.appendChild(title);
 
+  const setsContainer = document.createElement('div');
+  setsContainer.classList.add('sets-container');
+  setsContainer.setAttribute('data-sequence', sequenceKey);
+
   sequence.sets.forEach(set => {
       const setElement = document.createElement('div');
       setElement.classList.add('set');
-      setElement.id = set; // Add an ID to the set element
-      setElement.textContent = set;
-      sequenceElement.appendChild(setElement);
+      setElement.id = set;
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.classList.add('set-checkbox');
+      checkbox.addEventListener('change', function() {
+        setDuration.disabled = !checkbox.checked;
+      });
+
+      const setName = document.createElement('span');
+      setName.classList.add('set-name');
+      setName.textContent = set;
+
+      const setDuration = document.createElement('input');
+      setDuration.type = 'number';
+      setDuration.classList.add('set-duration');
+      setDuration.placeholder = 'Hours';
+      setDuration.min = 0;
+      setDuration.disabled = true;
+
+      setElement.appendChild(checkbox);
+      setElement.appendChild(setName);
+      setElement.appendChild(setDuration);
+      setElement.draggable = true;
+      setElement.addEventListener('dragstart', dragStart);
+      setElement.addEventListener('dragend', dragEnd);
+      setsContainer.appendChild(setElement);
   });
+
+  setsContainer.addEventListener('dragover', dragOver);
+  setsContainer.addEventListener('drop', drop);
+
+  sequenceElement.appendChild(setsContainer);
 
   if (sequence.children.length > 0) {
       const childrenContainer = document.createElement('div');
@@ -91,22 +120,86 @@ function displaySequences(container, sequenceKey) {
 function markSequenceCompleted(sequenceKey) {
   const sequenceElement = document.getElementById(sequenceKey);
   if (sequenceElement) {
-      sequenceElement.style.backgroundColor = '#d4edda'; // Light green background
-      sequenceElement.style.borderColor = '#c3e6cb'; // Green border
+      sequenceElement.style.backgroundColor = '#d4edda';
+      sequenceElement.style.borderColor = '#c3e6cb';
   }
 }
 
 function markSetCompleted(setId) {
   const setElement = document.getElementById(setId);
   if (setElement) {
-      setElement.style.backgroundColor = '#d4edda'; // Light green background
-      setElement.style.borderColor = '#c3e6cb'; // Green border
+      setElement.style.backgroundColor = '#d4edda';
+      setElement.style.borderColor = '#c3e6cb';
   }
+}
+
+function dragStart(e) {
+  e.dataTransfer.setData('text/plain', e.target.id);
+  e.target.classList.add('dragging');
+}
+
+function dragEnd(e) {
+  e.target.classList.remove('dragging');
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  const container = e.currentTarget;
+  const afterElement = getDragAfterElement(container, e.clientY);
+  const dropIndicators = document.querySelectorAll('.drop-indicator');
+  dropIndicators.forEach(indicator => indicator.remove());
+
+  const dropIndicator = document.createElement('div');
+  dropIndicator.classList.add('drop-indicator');
+
+  if (afterElement == null) {
+      container.appendChild(dropIndicator);
+  } else {
+      container.insertBefore(dropIndicator, afterElement);
+  }
+}
+
+function drop(e) {
+  e.preventDefault();
+  const setId = e.dataTransfer.getData('text');
+  const draggedElement = document.getElementById(setId);
+  const dropZone = e.target.closest('.sets-container');
+  
+  if (dropZone && draggedElement && dropZone.getAttribute('data-sequence') === draggedElement.closest('.sets-container').getAttribute('data-sequence')) {
+      const afterElement = getDragAfterElement(dropZone, e.clientY);
+      if (afterElement == null) {
+          dropZone.appendChild(draggedElement);
+      } else {
+          dropZone.insertBefore(draggedElement, afterElement);
+      }
+      
+      const sequenceKey = dropZone.getAttribute('data-sequence');
+      const sequence = sequences[sequenceKey];
+      
+      sequence.sets = Array.from(dropZone.children).filter(child => child.classList.contains('set')).map(child => child.id);
+  }
+  
+  const dropIndicators = document.querySelectorAll('.drop-indicator');
+  dropIndicators.forEach(indicator => indicator.remove());
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.set:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+      } else {
+          return closest;
+      }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('sequence-container');
-  displaySequences(container, 'root');
+  displaySequences(container, 'sequence1');
 });
 
 // Expose the functions to be used by the main.js
