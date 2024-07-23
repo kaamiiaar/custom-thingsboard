@@ -33,11 +33,11 @@
       </div>
     </div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="databases.js"></script>
     <script src="script.js"></script>
 
     <div id="overlay"></div>
     <div id="popup">
-        <button id="closePopup">Close</button>
         <div id="popupContent"></div>
     </div>
 
@@ -54,11 +54,6 @@
                 document.getElementById('popup').style.display = 'none';
         });
           });
-      });
-
-      document.getElementById('closePopup').addEventListener('click', function () {
-        document.getElementById('overlay').style.display = 'none';
-        document.getElementById('popup').style.display = 'none';
       });
 
     </script>

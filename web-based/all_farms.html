@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Automated Irrigation System</title>
+    <meta http-equiv="Accept-CH" content="Sec-CH-UA-Platform-Version, Sec-CH-UA-Model" /><link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/63e07e16c23aa4100c4c2059/cc93b906-63bd-4ede-aaf6-3dfd4191c49f/favicon.ico"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        #map {
+          width: 100%;
+          height: 90vh;
+        }
+        .plain-text-tooltip {
+          background: none;
+          border: none;
+          box-shadow: none;
+          font-size: 16px;
+          color: white;
+        }
+        .top-bar {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          right: 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background-color: rgba(255, 255, 255, 0.8);
+          padding: 10px;
+          border-radius: 5px;
+          z-index: 1000;
+        }
+        .logo {
+          display: flex;
+          align-items: center;
+        }
+        .logo img {
+          height: 50px;
+        }
+        .user-info {
+          display: flex;
+          align-items: center;
+        }
+        .user-info img {
+          height: 40px;
+          border-radius: 50%;
+          margin-right: 10px;
+        }
+        .user-info span {
+          font-size: 16px;
+        }
+        .chart-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+      </style>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header class="header">
+        <img src="aglantis-logo.png" alt="Aglantis Logo" class="logo">
+        <div class="user-info">
+          <span class="user-name">Mark Casta</span>
+          <img src="user-icon.png" alt="User Icon" class="user-icon">
+        </div>
+      </header>
+
+    <div id="map"></div>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([-19.576, 147.31], 14);
+    
+        // Add ESRI World Imagery tiles
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ',
+          maxZoom: 55
+        }).addTo(map);
+    
+        // Farm data
+        const farmsData = [
+        {
+            name: 'c1-fa',
+            type: 'farm',
+            label: 'Highway Farm',
+            coordinates: [[-19.5744672,147.309211],[-19.5760412,147.308488],[-19.5764012,147.30848],[-19.5768692,147.312552],[-19.5778964,147.3148746],[-19.5778876,147.3150868],[-19.5777897,147.3154665],[-19.5765909,147.3189286],[-19.575962,147.3204706],[-19.575216,147.320539],[-19.5744499,147.3192279],[-19.5707623,147.3196441],[-19.5699442,147.309954],[-19.5700982,147.309743],[-19.5744672,147.309211]],
+            auto_irrig: false,
+            progress: 75 // Progress percentage for the pie chart
+        },
+        {
+            name: 'c1-fb',
+            type: 'farm',
+            label: 'Drains',
+            coordinates: [[-19.5974819,147.341604],[-19.5977042,147.3424409],[-19.5984117,147.3491142],[-19.5914376,147.3514531],[-19.5911545,147.3524616],[-19.591013,147.352762],[-19.5906087,147.3528693],[-19.5892947,147.3527835],[-19.5885063,147.3439215],[-19.589133,147.3436425],[-19.5913971,147.3430632],[-19.5948135,147.3415182],[-19.5951976,147.341368],[-19.5974819,147.341604]],
+            auto_irrig: false,
+            progress: 50
+        },
+        {
+            name: 'c1-fc',
+            type: 'farm',
+            label: 'Fiveways',
+            coordinates: [[-19.5951176,147.3374117],[-19.5974018,147.3367679],[-19.5975636,147.33827],[-19.5961485,147.3386991],[-19.5953804,147.3385167],[-19.5953298,147.3383343],[-19.5946627,147.3385489],[-19.5945617,147.3386884],[-19.5944808,147.3388815],[-19.5944202,147.3390532],[-19.5943292,147.3392463],[-19.594218,147.3394287],[-19.5940765,147.3397184],[-19.5931668,147.3410595],[-19.5928434,147.341317],[-19.5917214,147.3416603],[-19.5912059,147.3385918],[-19.5951176,147.3374117]],
+            auto_irrig: false,
+            progress: 90
+        },
+        {
+            name: 'c1-fd',
+            type: 'farm',
+            label: 'Home',
+            coordinates: [[-19.5999067,147.3445291],[-19.6000179,147.3456127],[-19.6003009,147.3463369],[-19.6008568,147.3477477],[-19.6011802,147.3481232],[-19.6012914,147.3487669],[-19.5985827,147.3490566],[-19.5980369,147.343424],[-19.5983805,147.3433811],[-19.5981986,147.3417932],[-19.5988152,147.3422009],[-19.599088,147.3428875],[-19.5993407,147.3431558],[-19.5997753,147.3435205],[-19.5999067,147.3445291]],
+            auto_irrig: false,
+            progress: 20
+        },
+        // {
+        //     name: 'c1-fe',
+        //     type: 'farm',
+        //     label: 'Klondyke',
+        //     coordinates: [[-19.5840317,147.3665634],[-19.5839951,147.3663593],[-19.584036,147.3665618],[-19.5840317,147.3665634]],
+        //     auto_irrig: false,
+        //     progress: 60
+        // },
+        // {
+        //     name: 'c1-ff',
+        //     type: 'farm',
+        //     label: 'Kellys',
+        //     coordinates: [[-19.6187802,147.3431311],[-19.618882,147.3431431],[-19.6188824,147.3431474],[-19.6187802,147.3431311]],
+        //     auto_irrig: false,
+        //     progress: 40
+        // }
+        ];
+    
+        // Add farm polygons and pie charts to the map
+    farmsData.forEach(farm => {
+      const polygon = L.polygon(farm.coordinates, { color: 'green' }).addTo(map)
+        .bindPopup(`<b>${farm.label}</b><br>Type: ${farm.type}<br>Auto Irrigation: ${farm.auto_irrig}`)
+        .bindTooltip(farm.label, { permanent: true, direction: 'center', className: 'plain-text-tooltip' });
+
+      if (farm.name === 'c1-fa') {
+        polygon.on('click', function() {
+          window.location.href = 'index.html';
+        });
+      }
+
+      // Create a container for the pie chart
+      const pieContainer = L.divIcon({
+        className: 'chart-container',
+        html: `<canvas id="chart-${farm.name}" width="60" height="60"></canvas>`
+      });
+
+      // Calculate the center of the farm polygon to position the pie chart
+      const latLngs = farm.coordinates.map(coord => L.latLng(coord));
+      const center = L.latLngBounds(latLngs).getCenter();
+
+      // Add the pie chart container to the map
+      L.marker(center, { icon: pieContainer }).addTo(map);
+
+
+        // Create the pie chart using Chart.js
+        setTimeout(() => {
+        const ctx = document.getElementById(`chart-${farm.name}`).getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+            datasets: [{
+                data: [farm.progress, 100 - farm.progress],
+                backgroundColor: ['#4CAF50', '#d9534f'] // Green for completed, red for remaining
+            }]
+            },
+            options: {
+            responsive: false,
+            cutoutPercentage: 70,
+            tooltips: {
+                callbacks: {
+                label: function(tooltipItem, data) {
+                    const dataset = data.datasets[tooltipItem.datasetIndex];
+                    const currentValue = dataset.data[tooltipItem.index];
+                    const label = tooltipItem.index === 0 ? 'Completed' : 'Remaining';
+                    return `${label}: ${currentValue}%`;
+                }
+                }
+            },
+            hover: { mode: null }
+            }
+        });
+        }, 100);
+    });
+
+
+    
+        // Fit the map to the bounds of the farm polygons
+        const allCoordinates = farmsData.flatMap(farm => farm.coordinates);
+        map.fitBounds(allCoordinates, { padding: [40, 40] });
+      </script>
+
+  </body>
+</html>
