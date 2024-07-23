@@ -81,45 +81,6 @@
     });
   </script> -->
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check the localStorage for the state
-        if (localStorage.getItem('irrigationState') === 'started') {
-            document.getElementById('sequence-container-wrapper').style.display = 'none';
-            document.getElementById('irrigation-controls').style.display = 'block';
-            document.getElementById('irrigation-controls').style.flex = '1';
-            document.getElementById('irrigation-controls').style.overflowY = 'auto';
-            document.getElementById('irrigation-controls').style.maxWidth = '800px';
-        } else {
-            document.getElementById('sequence-container-wrapper').style.display = 'block';
-            document.getElementById('irrigation-controls').style.display = 'none';
-            document.getElementById('sequence-container-wrapper').style.flex = '1';
-            document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
-            document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
-        }
-    });
-
-    document.getElementById('start-irrigation-plan').addEventListener('click', function() {
-        document.getElementById('sequence-container-wrapper').style.display = 'none';
-        document.getElementById('irrigation-controls').style.display = 'block';
-        document.getElementById('irrigation-controls').style.flex = '1';
-        document.getElementById('irrigation-controls').style.overflowY = 'auto';
-        document.getElementById('irrigation-controls').style.maxWidth = '800px';
-        localStorage.setItem('irrigationState', 'started');
-    });
-
-    // Clicking on stop irrigation plan button
-    document.getElementById('stop-irrigation-plan').addEventListener('click', function() {
-        document.getElementById('irrigation-controls').style.display = 'none';
-        document.getElementById('sequence-container-wrapper').style.display = 'block';
-        document.getElementById('sequence-container-wrapper').style.flex = '1';
-        document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
-        document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
-        localStorage.setItem('irrigationState', 'stopped');
-    });
-</script>
-
-
 
   </body>
 </html>

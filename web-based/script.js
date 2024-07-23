@@ -511,63 +511,130 @@ Object.values(devices).forEach(device => {
 });
 
 
+document.addEventListener('DOMContentLoaded', function() {
+  // Check the localStorage for the state
+  if (localStorage.getItem('irrigationState') === 'started') {
+    document.getElementById('sequence-container-wrapper').style.display = 'none';
+    document.getElementById('irrigation-controls').style.display = 'block';
+    document.getElementById('irrigation-controls').style.flex = '1';
+    document.getElementById('irrigation-controls').style.overflowY = 'auto';
+    document.getElementById('irrigation-controls').style.maxWidth = '800px';
+  } else {
+    document.getElementById('sequence-container-wrapper').style.display = 'block';
+    document.getElementById('irrigation-controls').style.display = 'none';
+    document.getElementById('sequence-container-wrapper').style.flex = '1';
+    document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
+    document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Check the localStorage for the state
+  if (localStorage.getItem('irrigationState') === 'started') {
+    document.getElementById('sequence-container-wrapper').style.display = 'none';
+    document.getElementById('irrigation-controls').style.display = 'block';
+    document.getElementById('irrigation-controls').style.flex = '1';
+    document.getElementById('irrigation-controls').style.overflowY = 'auto';
+    document.getElementById('irrigation-controls').style.maxWidth = '800px';
+  } else {
+    document.getElementById('sequence-container-wrapper').style.display = 'block';
+    document.getElementById('irrigation-controls').style.display = 'none';
+    document.getElementById('sequence-container-wrapper').style.flex = '1';
+    document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
+    document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
+  }
+});
+
 function getSelectedSets() {
   const selectedSets = [];
+  let allDurationsProvided = true;
+
   document.querySelectorAll('.set-checkbox:checked').forEach(checkbox => {
-    selectedSets.push(checkbox.closest('.set').id);
     const set = checkbox.closest('.set').id;
+    selectedSets.push(set);
     sets[set].selected = 'yes';
-  });
 
-  // also get their durations
-  document.querySelectorAll('.set-duration').forEach(durationInput => {
-    const set = durationInput.closest('.set').id;
+    const durationInput = checkbox.closest('.set').querySelector('.set-duration');
     const duration = durationInput.value;
-    sets[set].duration = duration
+
+    if (!duration) {
+      durationInput.style.borderColor = 'red';
+      allDurationsProvided = false;
+    } else {
+      durationInput.style.borderColor = ''; // Reset the border color if duration is provided
+      sets[set].duration = duration;
+    }
   });
 
-  return selectedSets;
+  if (!allDurationsProvided) {
+    alert('You need to provide a duration for any selected set.');
+  }
+
+  return allDurationsProvided ? selectedSets : [];
 }
 
-function showIrrigationControlPanel() {
-  const selectedSets = getSelectedSets();
+// on click of the start irrigation plan button
+function showIrrigationControlPanel(selectedSets) {
   const container = document.getElementById('custom-sequence-container');
   container.innerHTML = '';
 
   selectedSets.forEach(set => {
-      const setElement = document.createElement('div');
-      setElement.classList.add('custom-set');
-      setElement.id = set;
+    const setElement = document.createElement('div');
+    setElement.classList.add('custom-set');
+    setElement.id = set;
 
-      const setLabel = document.createElement('label');
-      setLabel.textContent = sets[set].label;
-      setElement.appendChild(setLabel);
+    const setLabel = document.createElement('label');
+    setLabel.textContent = sets[set].label;
+    setElement.appendChild(setLabel);
 
-      const durationLabel = document.createElement('label');
-      durationLabel.textContent = `Duration: ${sets[set].duration} hours`;
-      setElement.appendChild(durationLabel);
+    const durationLabel = document.createElement('label');
+    durationLabel.textContent = `Duration: ${sets[set].duration} hours`;
+    setElement.appendChild(durationLabel);
 
-      const irrigationStatus = document.createElement('label');
-      irrigationStatus.textContent = `Status: ${sets[set].irrigationStatus}`;
-      setElement.appendChild(irrigationStatus);
+    const irrigationStatus = document.createElement('label');
+    irrigationStatus.textContent = `Status: ${sets[set].irrigationStatus}`;
+    setElement.appendChild(irrigationStatus);
 
-      const progressBar = document.createElement('div');
-      progressBar.classList.add('progress-bar');
+    const progressBar = document.createElement('div');
+    progressBar.classList.add('progress-bar');
 
-      const progressBarFill = document.createElement('div');
-      progressBarFill.classList.add('progress-bar-fill');
-      progressBarFill.style.width = `${sets[set].progress}%`;
-      progressBarFill.textContent = `${sets[set].progress}%`;
+    const progressBarFill = document.createElement('div');
+    progressBarFill.classList.add('progress-bar-fill');
+    progressBarFill.style.width = `${sets[set].progress}%`;
+    progressBarFill.textContent = `${sets[set].progress}%`;
 
-      progressBar.appendChild(progressBarFill);
-      setElement.appendChild(progressBar);
+    progressBar.appendChild(progressBarFill);
+    setElement.appendChild(progressBar);
 
-      container.appendChild(setElement);
+    container.appendChild(setElement);
   });
 }
 
 // event listener for start irrigation button
-document.getElementById('start-irrigation-plan').addEventListener('click', showIrrigationControlPanel);
+document.getElementById('start-irrigation-plan').addEventListener('click', function() {
+  const selectedSets = getSelectedSets();
+
+  if (selectedSets.length > 0) {
+    showIrrigationControlPanel(selectedSets);
+    document.getElementById('sequence-container-wrapper').style.display = 'none';
+    document.getElementById('irrigation-controls').style.display = 'block';
+    document.getElementById('irrigation-controls').style.flex = '1';
+    document.getElementById('irrigation-controls').style.overflowY = 'auto';
+    document.getElementById('irrigation-controls').style.maxWidth = '800px';
+    localStorage.setItem('irrigationState', 'started');
+  }
+});
+
+// Clicking on stop irrigation plan button
+document.getElementById('stop-irrigation-plan').addEventListener('click', function() {
+  document.getElementById('irrigation-controls').style.display = 'none';
+  document.getElementById('sequence-container-wrapper').style.display = 'block';
+  document.getElementById('sequence-container-wrapper').style.flex = '1';
+  document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
+  document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
+  localStorage.setItem('irrigationState', 'stopped');
+});
+
 
 
 
