@@ -4,201 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Automated Irrigation System</title>
+    <meta http-equiv="Accept-CH" content="Sec-CH-UA-Platform-Version, Sec-CH-UA-Model" /><link rel="icon" type="image/x-icon" href="https://images.squarespace-cdn.com/content/v1/63e07e16c23aa4100c4c2059/cc93b906-63bd-4ede-aaf6-3dfd4191c49f/favicon.ico"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <style>
-      body {
-          font-family: "Roboto", sans-serif;
-          background-color: #f4f5f7;
-          margin: 0;
-          padding: 20px;
-          color: #333;
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-      }
-      .container {
-          display: flex;
-          flex-direction: row;
-          height: calc(100% - 60px); /* Adjusted for button height */
-          justify-content: space-between;
-      }
-      #map {
-          flex: 1;
-          height: 100%;
-          margin-right: 20px;
-      }
-      #sequence-container-wrapper {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-      }
-      #sequence-container {
-          flex: 1;
-          overflow-y: auto;
-          max-width: 800px;
-      }
-      .sequence {
-          margin: 10px 0;
-          padding: 10px 20px;
-          border-radius: 5px;
-          background-color: #ffffff;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          position: relative;
-      }
-      .sequence::before {
-          content: "";
-          position: absolute;
-          left: -20px;
-          top: 10px;
-          bottom: 10px;
-          width: 2px;
-          background-color: #aaa;
-      }
-      .sequence::after {
-          content: "";
-          position: absolute;
-          top: 50%;
-          left: -20px;
-          width: 20px;
-          height: 2px;
-          background-color: #aaa;
-      }
-      .sequence h3 {
-          margin: 0;
-          color: #555;
-          font-size: 1.2em;
-      }
-      .set {
-          padding: 8px 10px;
-          border-left: 3px solid #888;
-          background-color: #f0f0f0;
-          border-radius: 3px;
-          margin-top: 5px;
-          cursor: move;
-          display: flex;
-          align-items: center;
-          position: relative;
-      }
-      .set-checkbox {
-          margin-right: 10px;
-      }
-      .set-duration {
-          margin-left: auto;
-          width: 50px;
-          border: 1px solid #ccc;
-          border-radius: 3px;
-          padding: 3px;
-      }
-      .set::before {
-          content: "≡";
-          margin-right: 10px;
-          color: #888;
-      }
-      .children {
-          margin-left: 20px;
-      }
-      .dragging {
-          opacity: 0.5;
-      }
-      .drop-indicator {
-          height: 0;
-          border-top: 2px solid black;
-          margin: 5px 0;
-      }
-      .buttons {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
-      }
-      .button {
-          padding: 10px 20px;
-          margin: 0 10px;
-          border: none;
-          border-radius: 5px;
-          background-color: #007bff;
-          color: #ffffff;
-          font-size: 1em;
-          cursor: pointer;
-      }
-      #start-irrigation-plan {
-          background-color: #103c34;
-      }
-      #openPopup { 
-          background-color: #ff8c00;
-      }
-      .button:hover {
-          background-color: #0056b3;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        background-color: #ffffff;
-        border-bottom: 1px solid #ccc;
-        margin-bottom: 20px;
-        background-color: #103c34;
-      }
-
-      .logo {
-        height: 40px;
-      }
-
-      .user-info {
-        display: flex;
-        align-items: center;
-        color: #ffffff;
-      }
-
-      .user-name {
-        margin-right: 10px;
-        font-size: 1em;
-        color: #ffffff;
-      }
-
-      .user-icon {
-        height: 40px;
-        border-radius: 50%;
-      }
-
-
-
-      #popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 460px;
-            padding: 20px;
-            height: 45%;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            overflow: auto;
-        }
-        #overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 999;
-        }
-        #closePopup {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            background: red;
-            color: white;
-            padding: 5px 10px;
-            border: none;
-        }
- 
-    </style>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header class="header">
@@ -211,115 +19,21 @@
     <div class="container">
       <div id="map"></div>
       <div id="sequence-container-wrapper">
-        <div id="sequence-container"></div>
-        <div class="buttons">
-          <button class="button" id="start-irrigation-plan">Start Irrigation Plan</button>
-          <button class="button" id="openPopup">Schedule Irrigation Plan</button>
-        </div>
+          <div id="sequence-container"></div>
+          <div class="buttons">
+              <button class="button" id="start-irrigation-plan">Start Irrigation Plan</button>
+              <button class="button" id="openPopup">Schedule Irrigation Plan</button>
+          </div>
+      </div>
+      <div id="irrigation-controls">
+          <h2>Irrigation Control Panel</h2>
+          <!-- Add your irrigation control elements here -->
+          <div id="custom-sequence-container"></div>
+          <button class="button" id="stop-irrigation-plan">Stop Irrigation Plan</button>
       </div>
     </div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="script.js"></script>
-    <script>
-      const setsData = [
-        {
-          name: 'c1fa-set1',
-          coordinates: [[-19.5759306, 147.3085443], [-19.5763669, 147.3085083], [-19.576442, 147.309018], [-19.5738569, 147.309299], [-19.5744596, 147.3091785], [-19.5749966, 147.3090017], [-19.5754109, 147.3088465], [-19.5756734, 147.3087131], [-19.5759306, 147.3085443]],
-        },
-        {
-          name: 'c1fa-set2',
-          coordinates: [[-19.576442, 147.309018], [-19.576544, 147.309902], [-19.569991, 147.310641], [-19.569924, 147.310022], [-19.569991, 147.3097126], [-19.576442, 147.309018]],
-        },
-        {
-          name: 'c1fa-set3',
-          coordinates: [[-19.57663, 147.310775], [-19.570082, 147.3115], [-19.569991, 147.310642], [-19.576543, 147.309901], [-19.576487, 147.310217], [-19.57658, 147.310362], [-19.57663, 147.310775]],
-        },
-        {
-          name: 'c1fa-set4',
-          coordinates: [[-19.576738, 147.311664], [-19.570178, 147.312403], [-19.570081, 147.3115], [-19.57663, 147.310775], [-19.576738, 147.311664]],
-        },
-        {
-          name: 'c1fa-set5',
-          coordinates: [[-19.576738, 147.311664], [-19.576796, 147.312146], [-19.576731, 147.312156], [-19.576831, 147.312562], [-19.570271, 147.313275], [-19.570178, 147.312403], [-19.576738, 147.311664]],
-        },
-        {
-          name: 'c1fa-set6',
-          coordinates: [[-19.577305, 147.313446], [-19.57033, 147.31419], [-19.570254, 147.313325], [-19.576894, 147.312593], [-19.577051, 147.312909], [-19.577077, 147.313126], [-19.577213, 147.313253], [-19.577305, 147.313446]],
-        },
-        {
-          name: 'c1fa-set7',
-          coordinates: [[-19.577676, 147.314292], [-19.570408, 147.315062], [-19.570331, 147.314191], [-19.577305, 147.313446], [-19.57766, 147.314192], [-19.577676, 147.314292]],
-        },
-        {
-          name: 'c1fa-set8',
-          coordinates: [[-19.577676, 147.314292], [-19.577684, 147.314339], [-19.577894, 147.314825], [-19.577919, 147.314932], [-19.57792, 147.315015], [-19.570473, 147.315807], [-19.570407, 147.315062], [-19.577676, 147.314292]],
-        },
-        {
-          name: 'c1fa-set9',
-          coordinates: [[-19.57792, 147.315015], [-19.577921, 147.315078], [-19.577689, 147.31577], [-19.570543, 147.316609], [-19.570473, 147.315807], [-19.57792, 147.315015]],
-        },
-        {
-          name: 'c1fa-set10',
-          coordinates: [[-19.5705519, 147.3166574], [-19.577685, 147.315863], [-19.577527, 147.316312], [-19.570592, 147.31714], [-19.5705519, 147.3166574]],
-        },
-        {
-          name: 'c1fa-set11',
-          coordinates: [[-19.577527, 147.316311], [-19.577216, 147.317194], [-19.570659, 147.317981], [-19.570592, 147.31714], [-19.577527, 147.316311]],
-        },
-        {
-          name: 'c1fa-set12',
-          coordinates: [[-19.577216, 147.317194], [-19.577127, 147.317447], [-19.576987, 147.317577], [-19.576997, 147.317816], [-19.576897, 147.318085], [-19.570728, 147.318833], [-19.570659, 147.317981], [-19.577216, 147.317194]],
-        },
-        {
-          name: 'c1fa-set13',
-          coordinates: [[-19.576897, 147.318085], [-19.576557, 147.319003], [-19.5708001, 147.3196194], [-19.570728, 147.318833], [-19.576897, 147.318085]],
-        },
-        {
-          name: 'c1fa-set14',
-          coordinates: [[-19.576519, 147.319128], [-19.575962, 147.3204706], [-19.575216, 147.320539], [-19.5745013, 147.3192953], [-19.5765008, 147.3190615], [-19.5765352, 147.3190894], [-19.576519, 147.319128]],
-        },
-      ];
-
-      // Initialize the map
-      var map = L.map('map').setView([-19.576, 147.31], 14); // Centering on a general coordinate
-
-      // Add a tile layer to the map
-      // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      //     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      // }).addTo(map);
-
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ',
-          maxZoom: 55
-      }).addTo(map);
-      
-
-    // Add polygons to the map
-    setsData.forEach((set, index) => {
-      L.polygon(set.coordinates, { color: 'blue' }).addTo(map)
-        .bindPopup(`<b>Set ${index + 1}</b>`)
-        .bindTooltip(`s${index + 1}`, { permanent: true, direction: 'center', className: 'plain-text-tooltip' });
-    });
-
-    // Fit the map to the bounds of the polygons
-    map.fitBounds(setsData.flatMap(set => set.coordinates));
-
-    // Add custom CSS to remove the box and style the text
-    var style = document.createElement('style');
-    style.innerHTML = `
-      .plain-text-tooltip {
-        background: none;
-        border: none;
-        box-shadow: none;
-        font-size: 12px; /* Adjust the font size as needed */
-        color: white; /* Adjust the text color as needed */
-      }
-    `;
-    document.head.appendChild(style);
-
-    </script>
-
-    <!-- <button id="openPopup">Open Popup</button> -->
 
     <div id="overlay"></div>
     <div id="popup">
@@ -329,20 +43,83 @@
 
     <script>
       document.getElementById('openPopup').addEventListener('click', function () {
-          document.getElementById('overlay').style.display = 'block';
-          document.getElementById('popup').style.display = 'block';
-          fetch('schedule-popup.html')
-              .then(response => response.text())
-              .then(data => {
-                  document.getElementById('popupContent').innerHTML = data;
-              });
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('popup').style.display = 'block';
+        fetch('schedule-popup.html')
+          .then(response => response.text())
+          .then(data => {
+            document.getElementById('popupContent').innerHTML = data;
+            document.getElementById('cancelPopup').addEventListener('click', function () {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('popup').style.display = 'none';
+        });
+          });
       });
 
       document.getElementById('closePopup').addEventListener('click', function () {
-          document.getElementById('overlay').style.display = 'none';
-          document.getElementById('popup').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
       });
+
+    </script>
   </script>
+
+
+  <!-- <div id="overlay-panel">
+    <h2>Irrigation Plan Active</h2>
+    <p>Control and monitor your irrigation plan here.</p>
+    <button class="button" id="stop-irrigation-plan">Stop Irrigation Plan</button>
+  </div>
+
+  <script>
+    document.getElementById('start-irrigation-plan').addEventListener('click', function() {
+        document.getElementById('overlay-panel').classList.add('active');
+    });
+
+    document.getElementById('stop-irrigation-plan').addEventListener('click', function() {
+        document.getElementById('overlay-panel').classList.remove('active');
+    });
+  </script> -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check the localStorage for the state
+        if (localStorage.getItem('irrigationState') === 'started') {
+            document.getElementById('sequence-container-wrapper').style.display = 'none';
+            document.getElementById('irrigation-controls').style.display = 'block';
+            document.getElementById('irrigation-controls').style.flex = '1';
+            document.getElementById('irrigation-controls').style.overflowY = 'auto';
+            document.getElementById('irrigation-controls').style.maxWidth = '800px';
+        } else {
+            document.getElementById('sequence-container-wrapper').style.display = 'block';
+            document.getElementById('irrigation-controls').style.display = 'none';
+            document.getElementById('sequence-container-wrapper').style.flex = '1';
+            document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
+            document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
+        }
+    });
+
+    document.getElementById('start-irrigation-plan').addEventListener('click', function() {
+        document.getElementById('sequence-container-wrapper').style.display = 'none';
+        document.getElementById('irrigation-controls').style.display = 'block';
+        document.getElementById('irrigation-controls').style.flex = '1';
+        document.getElementById('irrigation-controls').style.overflowY = 'auto';
+        document.getElementById('irrigation-controls').style.maxWidth = '800px';
+        localStorage.setItem('irrigationState', 'started');
+    });
+
+    // Clicking on stop irrigation plan button
+    document.getElementById('stop-irrigation-plan').addEventListener('click', function() {
+        document.getElementById('irrigation-controls').style.display = 'none';
+        document.getElementById('sequence-container-wrapper').style.display = 'block';
+        document.getElementById('sequence-container-wrapper').style.flex = '1';
+        document.getElementById('sequence-container-wrapper').style.overflowY = 'auto';
+        document.getElementById('sequence-container-wrapper').style.maxWidth = '800px';
+        localStorage.setItem('irrigationState', 'stopped');
+    });
+</script>
+
+
 
   </body>
 </html>
