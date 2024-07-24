@@ -9,29 +9,39 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="header">
+    <header class="header" id="header">
+      <button class="open-sidebar" id="toggleSidebar">
+        <img src="./icons/sidebar.png" alt="Menu Icon" class="menu-icon" id="menuIcon">
+      </button>
       <img src="aglantis-logo.png" alt="Aglantis Logo" class="logo">
       <div class="user-info">
         <span class="user-name">Mark Casta</span>
         <img src="user-icon.png" alt="User Icon" class="user-icon">
       </div>
     </header>
-    <div class="container">
+    <div class="sidebar" id="sidebar">
+      <a href="all-farms.html">Home</a>
+      <a href="farm-statistics.html">Farm Statistics</a>
+      <a href="farm-control-panel.html">Farm Control Panel</a>
+      <!-- <a href="#contact">Contact</a> -->
+    </div>
+    <div id="overlay-sidebar" class="overlay-sidebar"></div>
+    <div class="container" id="mainContent">
       <div id="map"></div>
       <div id="sequence-container-wrapper">
-          <div id="sequence-container"></div>
-          <div class="buttons">
-              <button class="button" id="start-irrigation-plan">Start Irrigation Plan</button>
-              <button class="button" id="openPopup">Schedule Irrigation Plan</button>
-          </div>
+        <div id="sequence-container"></div>
+        <div class="buttons">
+          <button class="button" id="start-irrigation-plan">Start Irrigation Plan</button>
+          <button class="button" id="openPopup">Schedule Irrigation Plan</button>
+        </div>
       </div>
       <div id="irrigation-controls">
-          <h2>Irrigation Control Panel</h2>
-          <!-- Add your irrigation control elements here -->
-          <div id="custom-sequence-container"></div>
-          <button class="button" id="stop-irrigation-plan">Stop Irrigation Plan</button>
+        <h2>Irrigation Control Panel</h2>
+        <div id="custom-sequence-container"></div>
+        <button class="button" id="stop-irrigation-plan">Stop Irrigation Plan</button>
       </div>
-    </div>
+    </div>  
+    <script src="sidebar-script.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="databases.js"></script>
     <script src="script.js"></script>

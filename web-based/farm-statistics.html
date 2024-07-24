@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Statistics - Irrigation Management Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+    <style>
+        .chart-placeholder {
+            background: linear-gradient(135deg, #f6f8fa 25%, #e5e9ec 25%, #e5e9ec 50%, #f6f8fa 50%, #f6f8fa 75%, #e5e9ec 75%, #e5e9ec 100%);
+            background-size: 20px 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <header class="header" id="header">
+        <button class="open-sidebar" id="toggleSidebar">
+            <img src="./icons/sidebar.png" alt="Menu Icon" class="menu-icon" id="menuIcon">
+        </button>
+        <img src="aglantis-logo.png" alt="Aglantis Logo" class="logo">
+        <div class="user-info">
+            <span class="user-name">Mark Casta</span>
+            <img src="user-icon.png" alt="User Icon" class="user-icon">
+        </div>
+    </header>
+    <div class="sidebar" id="sidebar">
+        <a href="all-farms.html">Home</a>
+        <a href="farm-statistics.html">Farm Statistics</a>
+        <a href="farm-control-panel.html">Farm Control Panel</a>
+    </div>
+    <div id="overlay-sidebar" class="overlay-sidebar"></div>
+        <div class="p-8" id="mainContent">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Farm Statistics</h2>
+            
+            <!-- Overview Section -->
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Overview</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Total Water Usage</h4>
+                        <p class="text-3xl font-bold text-indigo-600">125,000 L</p>
+                        <p class="text-sm text-gray-500 mt-2">+12% from last week</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Active Pumps</h4>
+                        <p class="text-3xl font-bold text-green-600">2/4</p>
+                        <p class="text-sm text-gray-500 mt-2">2 pumps in maintenance</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Avg Soil Moisture</h4>
+                        <p class="text-3xl font-bold text-blue-600">72%</p>
+                        <p class="text-sm text-gray-500 mt-2">Optimal range: 60-80%</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Alerts</h4>
+                        <p class="text-3xl font-bold text-yellow-600">2</p>
+                        <p class="text-sm text-gray-500 mt-2">1 high, 1 low priority</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pump Statistics Section -->
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Pump Statistics</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-lg font-medium text-gray-700 mb-4">Pressure Readings</h4>
+                        <div class="chart-placeholder h-64 rounded flex items-center justify-center text-gray-400">
+                            Pressure Chart Placeholder
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-lg font-medium text-gray-700 mb-4">Flow Rates</h4>
+                        <div class="chart-placeholder h-64 rounded flex items-center justify-center text-gray-400">
+                            Flow Rate Chart Placeholder
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Irrigation History Section -->
+            <section>
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Irrigation History</h3>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Set Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Water Used</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Set A</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-07-24 08:00</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-07-24 10:30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2h 30m</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15,000 L</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Set B</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-07-24 11:00</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2023-07-24 13:15</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2h 15m</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">13,500 L</td>
+                        </tr>
+                        <!-- Add more rows as needed -->
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+    <script>
+        document.getElementById('toggleSidebar').onclick = function() {
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('overlay-sidebar');
+        var mainContent = document.getElementById('mainContent');
+        var header = document.getElementById('header');
+        var menuIcon = document.getElementById('menuIcon');
+        
+        if (sidebar.style.width === '250px') {
+            sidebar.style.width = '0';
+            overlay.style.display = 'none';
+            mainContent.style.marginLeft = '0';
+            header.style.marginLeft = '0';
+            menuIcon.src = './icons/sidebar.png';  // Change to menu icon
+        } else {
+            sidebar.style.width = '250px';
+            // overlay.style.display = 'block';
+            mainContent.style.marginLeft = '250px';
+            header.style.marginLeft = '250px';
+            menuIcon.src = './icons/sidebar.png';  // Change to close icon
+        }
+        };
+
+    </script>
+</body>
+</html>

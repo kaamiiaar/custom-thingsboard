@@ -2,17 +2,57 @@ body {
     font-family: "Roboto", sans-serif;
     background-color: #f4f5f7;
     margin: 0;
-    padding: 0px;
+    padding: 0;
     color: #333;
     display: flex;
     flex-direction: column;
     height: 95vh;
+    transition: margin-left 0.5s;
+}
+.header {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #103c34;
+    border-bottom: 1px solid #ccc;
+    transition: margin-left 0.5s;
+}
+.logo {
+    height: 40px;
+    margin-left: 10px;
+}
+.user-info {
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    margin-left: auto;
+}
+.user-name {
+    margin-right: 10px;
+    font-size: 1em;
+    color: #ffffff;
+}
+.user-icon {
+    height: 40px;
+    border-radius: 50%;
+}
+.open-sidebar {
+    background: none;
+    border: none;
+    color: #103c34;
+    cursor: pointer;
+    padding: 10px;
+}
+.menu-icon {
+    width: 30px;
+    height: 30px;
 }
 .container {
     display: flex;
     flex-direction: row;
-    height: calc(100% - 60px); /* Adjusted for button height */
+    height: calc(100% - 60px);
     justify-content: space-between;
+    transition: margin-left 0.5s;
 }
 #map {
     flex: 1.5;
@@ -32,7 +72,7 @@ body {
     overflow-y: auto;
     max-width: 800px;
     position: relative;
-    height: calc(100% - 60px); /* Adjusted for button height */
+    height: calc(100% - 60px);
     font-size: smaller;
 }
 .sequence {
@@ -137,36 +177,12 @@ body {
 #start-irrigation-plan {
     background-color: #103c34;
 }
-#openPopup { 
+#openPopup {
     background-color: #ff8c00;
 }
 .button:hover {
     background-color: #0056b3;
 }
-.header {display: flex;justify-content: space-between;align-items: center;padding: 10px 20px;background-color: #ffffff;border-bottom: 1px solid #ccc;margin-bottom: 0px;background-color: #103c34;}
-
-.logo {
-    height: 40px;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    color: #ffffff;
-}
-
-.user-name {
-    margin-right: 10px;
-    font-size: 1em;
-    color: #ffffff;
-}
-
-.user-icon {
-    height: 40px;
-    border-radius: 50%;
-}
-
-/* For the popup */
 #popup {
     display: none;
     position: fixed;
@@ -201,8 +217,6 @@ body {
     padding: 5px 10px;
     border: none;
 }
-
-/* For the irrigation control widget */
 #irrigation-controls {
     display: none;
     width: 80%;
@@ -238,4 +252,47 @@ body {
 }
 #custom-sequence-container {
     margin-bottom: 20px;
+}
+.sidebar {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1001;
+    top: 0;
+    left: 0;
+    background-color: #103c34;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+}
+.sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 1.1em;
+    color: #fff;
+    display: block;
+    transition: 0.3s;
+}
+.sidebar a:hover {
+    background-color: #575757;
+}
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2em;
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+}
+.overlay-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
 }
