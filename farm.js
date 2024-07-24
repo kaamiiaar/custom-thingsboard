@@ -1,4 +1,4 @@
-class Farm {
+export class Farm {
     constructor(sets, irrig_info) {
         this.sets = sets;
         this.irrig_info = irrig_info;
@@ -19,4 +19,4 @@ class Farm {
     }
 }
 
-module.exports = Farm;
+// module.exports = Farm;

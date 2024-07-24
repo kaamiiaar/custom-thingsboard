@@ -1,5 +1,5 @@
 // wlsensor.js
-class WLSensor {
+export class WLSensor {
     constructor(name, label, type, lat, long, status, toRelations = []) {
         this.name = name;
         this.label = label;
@@ -23,4 +23,4 @@ class WLSensor {
     }
 }
 
-module.exports = WLSensor;
+// module.exports = WLSensor;

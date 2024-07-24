@@ -1,5 +1,5 @@
 // set.js
-class Set {
+export class Set {
     constructor(name, label, type, duration, irrigationStatus, sequence, valves = [], pumps = [], wlSensors = []) {
         this.name = name;
         this.label = label;
@@ -15,5 +15,5 @@ class Set {
     }
 }
 
-module.exports = Set;
+// module.exports = Set;
 

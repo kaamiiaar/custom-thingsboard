@@ -1,5 +1,5 @@
 // valve.js
-class Valve {
+export class Valve {
     constructor(name, label, type, lat, long, status, toRelations = []) {
         this.name = name;
         this.label = label;
@@ -23,4 +23,4 @@ class Valve {
     }
 }
 
-module.exports = Valve;
+// module.exports = Valve;

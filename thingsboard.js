@@ -1,5 +1,5 @@
 // thingsboard.js
-class Thingsboard {
+export class Thingsboard {
     constructor(devices, assets) {
         this.devices = Object.freeze(devices); // Freezing the devices array
         this.assets = Object.freeze(assets);   // Freezing the assets array
@@ -52,6 +52,7 @@ class Thingsboard {
             if (msg.status === "Wet") {
                 // transition that set
                 metadata.curr_set = curr_set.name;
+                EventModule.addEvent('set', metadata.curr_set);
                 msgType = 'TRANSITION_SET';
                 this.setRuleChain(msg, metadata, msgType);
             }
@@ -128,14 +129,11 @@ class Thingsboard {
 
         // console.log(`Farm information: ${JSON.stringify(farm.irrig_info, null, 2)}, ${farm.auto_irrig}`);
 
-        // I also need to add the if condition for auto_irrig
-        if (farm.auto_irrig) {
-            // start the irrigation process
-            metadata.curr_sequence = "root";
-            msgType = 'TRANSITION_SEQUENCE';
-            msg.custom_irrig_info = farm.custom_irrig_info;
-            this.seqRuleChain(msg, metadata, msgType);
-        }
+        metadata.curr_sequence = "root";
+        msgType = 'TRANSITION_SEQUENCE';
+        msg.custom_irrig_info = farm.custom_irrig_info;
+        this.seqRuleChain(msg, metadata, msgType);
+
     }
 
     seqRuleChain(msg, metadata, msgType) {
@@ -513,6 +511,7 @@ class Thingsboard {
             } else {
                 // if there is no next set in the sequence, transition to the next sequence
                 console.log(`[${new Date().toLocaleTimeString()}] Sequence ${sequence} completed - go for sequence transition.`);
+                EventModule.addEvent('sequence', sequence);
                 console.log("=".repeat(120));
                 // console.log(`Transitioning to the next sequences: ${msg.custom_irrig_info.sequences[sequence].children}`);
 
@@ -525,4 +524,4 @@ class Thingsboard {
 }
 }
 
-module.exports = Thingsboard;
+// module.exports = Thingsboard;

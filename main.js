@@ -1,9 +1,9 @@
-const Set = require('./set.js');
-const Thingsboard = require('./thingsboard.js');
-const Farm = require('./farm.js');
-const Valve = require('./valve.js');
-const Pump = require('./pump.js');
-const WLSensor = require('./wlsensor.js');
+import {Set} from './set.js';
+import {Thingsboard} from './thingsboard.js';
+import {Farm} from './farm.js';
+import {Valve} from './valve.js';
+import {Pump} from './pump.js';
+import {WLSensor} from './wlsensor.js';
 
 // instantiate pumps
 const pumps = {
@@ -75,9 +75,8 @@ const sets = {
     "c1fa-set14": new Set("c1fa-set14", "Set 14", "irrigation set", 10, "off", "sequence5", ["c1fa-valve13-e"], ["c1fa-pump4"], ["c1fa-was14"])
 };
 
-
 // Define irrigation information with references to Set object keys
-const irrig_info = {
+export const irrig_info = {
     sets: sets,
     visited_sequences: [],
     transitioning_sequences: [],
@@ -142,7 +141,47 @@ const assets = {
 };
 
 // Instantiate thingsboard
-tb_pe = new Thingsboard(devices, assets);
+var tb_pe = new Thingsboard(devices, assets);
+
+const EventModule = (function () {
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let eventQueue = [];
+
+    function addEvent(action, id) {
+        eventQueue.push({ action, id });
+    }
+
+    async function processEvents() {
+        const delay = 1000;
+        while (eventQueue.length > 0) {
+            const event = eventQueue.shift();
+            if (event.action === 'sequence') {
+                console.log(`Sequence ${event.id} completed`);
+                window.markSequenceCompleted(event.id);
+            } else if (event.action === 'set') {
+                console.log(`Set ${event.id} completed`);
+                window.markSetCompleted(event.id);
+            }
+            await sleep(delay);
+        }
+    }
+
+    return {
+        addEvent,
+        processEvents
+    };
+})();
+
+// Expose EventModule globally
+window.EventModule = EventModule;
 
 // Use tb_pe when calling methods that need it
 farm_c1fa.onClickStartIrrigation(tb_pe);
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Start processing events
+    EventModule.processEvents();
+});

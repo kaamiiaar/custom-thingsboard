@@ -1,5 +1,5 @@
 // pump.js
-class Pump {
+export class Pump {
     constructor(name, label, type, lat, long, status, sequences, toRelations = ['c1fa']) {
         this.name = name;
         this.label = label;
@@ -24,4 +24,4 @@ class Pump {
     }
 }
 
-module.exports = Pump;
+// module.exports = Pump;
