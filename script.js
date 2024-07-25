@@ -186,136 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.markSequenceCompleted = markSequenceCompleted;
 window.markSetCompleted = markSetCompleted;
 
-
-// Map Widget
-// Initialize the map
-var map = L.map('map').setView([-19.576, 147.31], 14); // Centering on a general coordinate
-
-// Add a tile layer to the map
-// L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-// }).addTo(map);
-
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ',
-    maxZoom: 55
-}).addTo(map);
-
-
-// Add polygons to the map
-setsData.forEach((set, index) => {
-  const irrigationStatus = sets[set.name].irrigationStatus;
-  const color = irrigationStatus === 'on' ? "#0088D1" : irrigationStatus === 'off' ? '#E65200' : 'blue';
-  const isSelected = sets[set.name].selected === 'yes';
-
-  console.log(isSelected ? 'yellow' : color, isSelected ? 0.5 : 0.3, isSelected ? 1 : 0.6, isSelected ? 3 : 1.5);
-  
-  L.polygon(set.coordinates, {
-    color: isSelected ? 'yellow' : color,
-    fillOpacity: isSelected ? 0.5 : 0.3,
-    opacity: isSelected ? 1 : 0.6,
-    weight: isSelected ? 3 : 1.5
-  }).addTo(map)
-    .bindPopup(`<b>Set ${index + 1}</b>`)
-    .bindTooltip(`s${index + 1}`, { permanent: true, direction: 'center', className: 'plain-text-tooltip' });
-});
-
-// Fit the map to the bounds of the polygons with a padding of 50px
-map.fitBounds(setsData.map(set => set.coordinates), { padding: [40, 40] });
-
-// Add custom CSS to remove the box and style the text
-var style = document.createElement('style');
-style.innerHTML = `
-.plain-text-tooltip {
-  background: none;
-  border: none;
-  box-shadow: none;
-  font-size: 12px; /* Adjust the font size as needed */
-  color: white; /* Adjust the text color as needed */
-}
-`;
-document.head.appendChild(style);
-
-// Define custom icons for each device type and status
-const iconSize = [22, 22]; // Adjust the size as needed
-
-const pumpOnIcon = L.icon({
-  iconUrl: 'path/to/pump-on.png', // Replace with the path to your pump on icon
-  iconSize: iconSize,
-  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
-  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
-});
-
-const pumpOffIcon = L.icon({
-  iconUrl: './icons/pump-off.png', // Replace with the path to your pump off icon
-  iconSize: iconSize,
-  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
-  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
-});
-
-const wlSensorWetIcon = L.icon({
-  iconUrl: './icons/wlsensor-wet.png', // Replace with the path to your WLSensor wet icon
-  iconSize: iconSize,
-  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
-  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
-});
-
-const wlSensorDryIcon = L.icon({
-  iconUrl: './icons/wlsensor-dry.png', // Replace with the path to your WLSensor dry icon
-  iconSize: iconSize,
-  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
-  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
-});
-
-const valveClosedIcon = L.icon({
-  iconUrl: './icons/valve-closed.png', // Replace with the path to your valve closed icon
-  iconSize: iconSize,
-  iconAnchor: [16, 32], // Adjust the anchor as needed
-  popupAnchor: [0, -32] // Adjust the popup anchor as needed
-});
-
-const valveOpenLeftIcon = L.icon({
-  iconUrl: './icons/valve-open-left.png', // Replace with the path to your valve open left icon
-  iconSize: iconSize,
-  iconAnchor: [16, 32], // Adjust the anchor as needed
-  popupAnchor: [0, -32] // Adjust the popup anchor as needed
-});
-
-const valveOpenRightIcon = L.icon({
-  iconUrl: './icons/valve-open-right.png', // Replace with the path to your valve open right icon
-  iconSize: iconSize,
-  iconAnchor: [16, 32], // Adjust the anchor as needed
-  popupAnchor: [0, -32] // Adjust the popup anchor as needed
-});
-
-// Function to get the appropriate icon based on device type and status
-function getIcon(device) {
-  switch (device.type) {
-    case 'pump':
-      return device.status === 'on' ? pumpOnIcon : pumpOffIcon;
-    case 'water alert sensor':
-      return device.status === 'Wet' ? wlSensorWetIcon : wlSensorDryIcon;
-    case 'valve':
-      if (device.name.slice(-1) === 'e') {
-        return device.status === 'off' ? valveClosedIcon : valveOpenRightIcon;
-      } else if (device.name.slice(-1) === 'w') {
-        return device.status === 'off' ? valveClosedIcon : valveOpenLeftIcon;
-      } else {
-        return valveClosedIcon;
-      }
-    default:
-      return null;
-  }
-}
-
-// Add devices to the map with custom icons
-Object.values(devices).forEach(device => {
-  L.marker([device.lat, device.long], { icon: getIcon(device) })
-    .addTo(map)
-    .bindPopup(`<b>${device.label}</b><br>Type: ${device.type}<br>Status: ${device.status}`);
-});
-
-
 document.addEventListener('DOMContentLoaded', function() {
   // Check the localStorage for the state
   if (localStorage.getItem('irrigationState') === 'started') {
@@ -542,3 +412,199 @@ document.getElementById('stop-irrigation-plan').addEventListener('click', functi
 
 // }
 
+
+// Map Widget
+// Initialize the map
+var map = L.map('map').setView([-19.576, 147.31], 14); // Centering on a general coordinate
+
+// Add a tile layer to the map
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ',
+    maxZoom: 55
+}).addTo(map);
+
+// Add polygons to the map
+setsData.forEach((set, index) => {
+  const irrigationStatus = sets[set.name].irrigationStatus;
+  const color = irrigationStatus === 'on' ? "#0088D1" : irrigationStatus === 'off' ? '#E65200' : 'blue';
+  const isSelected = sets[set.name].selected === 'yes';
+
+  L.polygon(set.coordinates, {
+    color: isSelected ? 'yellow' : color,
+    fillOpacity: isSelected ? 0.5 : 0.3,
+    opacity: isSelected ? 1 : 0.6,
+    weight: isSelected ? 3 : 1.5
+  }).addTo(map)
+    .bindPopup(`<b>Set ${index + 1}</b>`)
+    .bindTooltip(`s${index + 1}`, { permanent: true, direction: 'center', className: 'plain-text-tooltip' });
+});
+
+// Fit the map to the bounds of the polygons with a padding of 50px
+map.fitBounds(setsData.map(set => set.coordinates), { padding: [40, 40] });
+
+// Add custom CSS to remove the box and style the text
+var style = document.createElement('style');
+style.innerHTML = `
+.plain-text-tooltip {
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: 12px; /* Adjust the font size as needed */
+  color: white; /* Adjust the text color as needed */
+}
+`;
+document.head.appendChild(style);
+
+// Define custom icons for each device type and status
+const iconSize = [22, 22]; // Adjust the size as needed
+
+const pumpOnIcon = L.icon({
+  iconUrl: 'path/to/pump-on.png', // Replace with the path to your pump on icon
+  iconSize: iconSize,
+  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
+  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
+});
+
+const pumpOffIcon = L.icon({
+  iconUrl: './icons/pump-off.png', // Replace with the path to your pump off icon
+  iconSize: iconSize,
+  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
+  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
+});
+
+const wlSensorWetIcon = L.icon({
+  iconUrl: './icons/wlsensor-wet.png', // Replace with the path to your WLSensor wet icon
+  iconSize: iconSize,
+  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
+  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
+});
+
+const wlSensorDryIcon = L.icon({
+  iconUrl: './icons/wlsensor-dry.png', // Replace with the path to your WLSensor dry icon
+  iconSize: iconSize,
+  iconAnchor: [12.8, 25.6], // Adjust the anchor as needed
+  popupAnchor: [0, -25.6] // Adjust the popup anchor as needed
+});
+
+const valveClosedIcon = L.icon({
+  iconUrl: './icons/valve-closed.png', // Replace with the path to your valve closed icon
+  iconSize: iconSize,
+  iconAnchor: [16, 32], // Adjust the anchor as needed
+  popupAnchor: [0, -32] // Adjust the popup anchor as needed
+});
+
+const valveOpenLeftIcon = L.icon({
+  iconUrl: './icons/valve-open-left.png', // Replace with the path to your valve open left icon
+  iconSize: iconSize,
+  iconAnchor: [16, 32], // Adjust the anchor as needed
+  popupAnchor: [0, -32] // Adjust the popup anchor as needed
+});
+
+const valveOpenRightIcon = L.icon({
+  iconUrl: './icons/valve-open-right.png', // Replace with the path to your valve open right icon
+  iconSize: iconSize,
+  iconAnchor: [16, 32], // Adjust the anchor as needed
+  popupAnchor: [0, -32] // Adjust the popup anchor as needed
+});
+
+// Function to get the appropriate icon based on device type and status
+function getIcon(device) {
+  switch (device.type) {
+    case 'pump':
+      return device.status === 'on' ? pumpOnIcon : pumpOffIcon;
+    case 'water alert sensor':
+      return device.status === 'Wet' ? wlSensorWetIcon : wlSensorDryIcon;
+    case 'valve':
+      if (device.name.slice(-1) === 'e') {
+        return device.status === 'off' ? valveClosedIcon : valveOpenRightIcon;
+      } else if (device.name.slice(-1) === 'w') {
+        return device.status === 'off' ? valveClosedIcon : valveOpenLeftIcon;
+      } else {
+        return valveClosedIcon;
+      }
+    default:
+      return null;
+  }
+}
+
+// Add devices to the map with custom icons
+Object.values(devices).forEach(device => {
+  L.marker([device.lat, device.long], { icon: getIcon(device) })
+    .addTo(map)
+    .bindPopup(`<b>${device.label}</b><br>Type: ${device.type}<br>Status: ${device.status}`);
+});
+
+// Add the event listener for the Set2 fill button
+document.getElementById('start-set2-fill').addEventListener('click', function() {
+  startSet2Fill();
+});
+
+// Function to create the progress polygon
+function createProgressPolygon(polygonCoords, progress) {
+  const boundingBox = findBoundingBox(polygonCoords);
+  const minX = boundingBox.minX;
+  const maxX = boundingBox.maxX;
+  const minY = boundingBox.minY;
+  const maxY = boundingBox.maxY;
+
+  const currentY = minY + (maxY - minY) * progress;
+
+  const progressPolygonCoords = [
+      [minY, minX],
+      [currentY, minX],
+      [currentY, maxX],
+      [minY, maxX]
+  ];
+
+  return L.polygon(progressPolygonCoords, {color: '#0088D1', fillOpacity: 0.35, weight: 0});
+}
+
+// Function to find the bounding box of the polygon
+function findBoundingBox(coords) {
+  let minX = coords[0][1], maxX = coords[0][1];
+  let minY = coords[0][0], maxY = coords[0][0];
+
+  coords.forEach(function(coord) {
+      if (coord[1] < minX) minX = coord[1];
+      if (coord[1] > maxX) maxX = coord[1];
+      if (coord[0] < minY) minY = coord[0];
+      if (coord[0] > maxY) maxY = coord[0];
+  });
+
+  return {minX: minX, maxX: maxX, minY: minY, maxY: maxY};
+}
+
+// Function to start the simulation for Set2
+function startSet2Fill() {
+  let progress = 0;
+  const set2Coordinates = setsData.find(set => set.name === 'c1fa-set2').coordinates;
+  let progressPolygon = createProgressPolygon(set2Coordinates, progress);
+  progressPolygon.addTo(map);
+
+  const interval = setInterval(function() {
+      if (progress >= 1) {
+          clearInterval(interval);
+      } else {
+          progress += 0.01;
+          map.removeLayer(progressPolygon);
+          progressPolygon = createProgressPolygon(set2Coordinates, progress);
+          progressPolygon.addTo(map);
+          clipProgressPolygon(progressPolygon, set2Coordinates);
+      }
+  }, 100);
+}
+
+// Function to clip the progress polygon to the main polygon
+function clipProgressPolygon(progressPolygon, mainPolygonCoords) {
+  const svg = d3.select(map.getPanes().overlayPane).select("svg").select("g");
+  const clipPath = svg.append("defs").append("clipPath")
+      .attr("id", "clip");
+
+  clipPath.append("polygon")
+      .attr("points", mainPolygonCoords.map(function(coord) {
+          return map.latLngToLayerPoint(coord).x + "," + map.latLngToLayerPoint(coord).y;
+      }).join(" "));
+
+  // Apply clip path to the progress polygon
+  d3.select(progressPolygon._path).attr("clip-path", "url(#clip)");
+}

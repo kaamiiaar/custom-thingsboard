@@ -296,3 +296,8 @@ body {
     background: rgba(0, 0, 0, 0.7);
     z-index: 1000;
 }
+
+#start-set2-fill {
+    background-color: #28a745;
+  }
+  

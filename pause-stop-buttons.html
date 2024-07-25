@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Valve Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 80%;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar div {
+            height: 20px;
+            width: 0;
+            background: #76c7c0;
+            transition: width 0.1s;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            background: #76c7c0;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5da8a4;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multi-Valve Simulation</h1>
+        <div id="status">Status: Waiting to start...</div>
+        <div id="valves">
+            <div class="valve" id="valve1">
+                <div class="progress-bar">
+                    <div id="progress1"></div>
+                </div>
+            </div>
+            <div class="valve" id="valve2">
+                <div class="progress-bar">
+                    <div id="progress2"></div>
+                </div>
+            </div>
+            <div class="valve" id="valve3">
+                <div class="progress-bar">
+                    <div id="progress3"></div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="startPauseButton" onclick="startOrPauseSimulation()">Start</button>
+            <button id="stopButton" onclick="stopSimulation()" disabled>Stop</button>
+            <button id="nextButton" onclick="nextValve()" disabled>Next</button>
+        </div>
+    </div>
+
+    <script>
+        let valves = [
+            { id: 1, duration: 5000, progress: 0, isPaused: false, timer: null },
+            { id: 2, duration: 7000, progress: 0, isPaused: false, timer: null },
+            { id: 3, duration: 10000, progress: 0, isPaused: false, timer: null }
+        ];
+        let currentValveIndex = -1; // Start with -1 to ensure the first valve is started correctly
+
+        function updateProgress(valve) {
+            const progressElement = document.getElementById(`progress${valve.id}`);
+            if (!valve.isPaused) {
+                valve.progress = Date.now() - valve.startTime;
+                let percentage = Math.min((valve.progress / valve.duration) * 100, 100);
+                progressElement.style.width = `${percentage}%`;
+
+                if (percentage < 100) {
+                    valve.timer = requestAnimationFrame(() => updateProgress(valve));
+                } else {
+                    moveToNextValve();
+                }
+            }
+        }
+
+        function openValve(valve) {
+            document.getElementById("status").innerText = `Status: Valve ${valve.id} Open`;
+            console.log(`Valve ${valve.id} opened`);
+        }
+
+        function moveToNextValve() {
+            if (currentValveIndex < valves.length - 1) {
+                currentValveIndex++;
+                const nextValve = valves[currentValveIndex];
+                openValve(nextValve);
+                nextValve.startTime = Date.now();
+                nextValve.progress = 0;
+                updateProgress(nextValve);
+                document.getElementById("startPauseButton").innerText = "Pause";
+                document.getElementById("stopButton").disabled = false;
+                document.getElementById("nextButton").disabled = false;
+            } else {
+                document.getElementById("status").innerText = "Status: Simulation Complete";
+                document.getElementById("startPauseButton").innerText = "Start";
+                document.getElementById("startPauseButton").disabled = false;
+                document.getElementById("stopButton").disabled = true;
+                document.getElementById("nextButton").disabled = true;
+                console.log("Simulation complete");
+            }
+        }
+
+        function startSimulation() {
+            currentValveIndex = -1; // Reset to -1 to start from the first valve
+            valves.forEach(valve => {
+                valve.progress = 0;
+                valve.isPaused = false;
+                cancelAnimationFrame(valve.timer);
+                document.getElementById(`progress${valve.id}`).style.width = "0%";
+            });
+            document.getElementById("status").innerText = "Status: Starting...";
+            document.getElementById("startPauseButton").disabled = true;
+            moveToNextValve();
+        }
+
+        function pauseCurrentValve() {
+            if (currentValveIndex < valves.length && currentValveIndex >= 0) {
+                const currentValve = valves[currentValveIndex];
+                currentValve.isPaused = true;
+                cancelAnimationFrame(currentValve.timer);
+                document.getElementById("startPauseButton").innerText = "Continue";
+                document.getElementById("status").innerText = `Status: Valve ${currentValve.id} Paused`;
+                console.log(`Valve ${currentValve.id} paused`);
+            }
+        }
+
+        function resumeCurrentValve() {
+            if (currentValveIndex < valves.length && currentValveIndex >= 0) {
+                const currentValve = valves[currentValveIndex];
+                currentValve.isPaused = false;
+                currentValve.startTime = Date.now() - currentValve.progress;
+                updateProgress(currentValve);
+                document.getElementById("startPauseButton").innerText = "Pause";
+                document.getElementById("status").innerText = `Status: Valve ${currentValve.id} Resumed`;
+                console.log(`Valve ${currentValve.id} resumed`);
+            }
+        }
+
+        function startOrPauseSimulation() {
+            const button = document.getElementById("startPauseButton");
+            if (button.innerText === "Start") {
+                startSimulation();
+                button.disabled = false;
+                button.innerText = "Pause";
+                document.getElementById("stopButton").disabled = false;
+                document.getElementById("nextButton").disabled = false;
+            } else if (button.innerText === "Pause") {
+                pauseCurrentValve();
+            } else if (button.innerText === "Continue") {
+                resumeCurrentValve();
+            }
+        }
+
+        function stopSimulation() {
+            valves.forEach(valve => {
+                valve.isPaused = true;
+                cancelAnimationFrame(valve.timer);
+                valve.progress = 0;
+                document.getElementById(`progress${valve.id}`).style.width = "0%";
+            });
+            currentValveIndex = -1;
+            document.getElementById("status").innerText = "Status: Stopped";
+            document.getElementById("startPauseButton").innerText = "Start";
+            document.getElementById("startPauseButton").disabled = false;
+            document.getElementById("stopButton").disabled = true;
+            document.getElementById("nextButton").disabled = true;
+            console.log("Simulation stopped");
+        }
+
+        function nextValve() {
+            if (currentValveIndex < valves.length && currentValveIndex >= 0) {
+                const currentValve = valves[currentValveIndex];
+                currentValve.isPaused = true;
+                cancelAnimationFrame(currentValve.timer);
+                currentValve.progress = currentValve.duration; // Mark current valve as completed
+                document.getElementById(`progress${currentValve.id}`).style.width = "100%";
+                moveToNextValve();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,83 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sequence Viewer</title>
+    <title>Leaflet Progress Bar on Polygon</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body {
-            font-family: "Roboto", sans-serif;
-            background-color: #f4f5f7;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        #sequence-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .sequence {
-            margin: 10px 0;
-            padding: 10px 20px;
-            border-radius: 5px;
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        .sequence::before {
-            content: "";
-            position: absolute;
-            left: -20px;
-            top: 10px;
-            bottom: 10px;
-            width: 2px;
-            background-color: #aaa;
-        }
-        .sequence::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: -20px;
-            width: 20px;
-            height: 2px;
-            background-color: #aaa;
-        }
-        .sequence h3 {
-            margin: 0;
-            color: #555;
-            font-size: 1.2em;
-        }
-        .set {
-            padding: 8px 10px;
-            border-left: 3px solid #888;
-            background-color: #f0f0f0;
-            border-radius: 3px;
-            margin-top: 5px;
-            cursor: move;
-            display: flex;
-            align-items: center;
-            position: relative;
-        }
-        .set::before {
-            content: "≡";
-            margin-right: 10px;
-            color: #888;
-        }
-        .children {
-            margin-left: 20px;
-        }
-        .dragging {
-            opacity: 0.5;
-        }
-        .drop-indicator {
-            height: 0;
-            border-top: 2px solid black;
-            margin: 5px 0;
+        #map { height: 100vh; }
+        .leaflet-bar a {
+            background-color: #fff;
+            padding: 5px;
+            text-decoration: none;
+            border: 1px solid rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
-    <div id="sequence-container"></div>
-    <script src="script-test.js"></script>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Define the main polygon coordinates
+        var polygonCoords = [
+            [51.509, -0.08],
+            [51.503, -0.06],
+            [51.51, -0.047],
+            [51.505, -0.05]
+        ];
+
+        // Add the main polygon to the map
+        var mainPolygon = L.polygon(polygonCoords, {color: 'blue'}).addTo(map);
+
+        // Function to find the bounding box of the polygon
+        function findBoundingBox(coords) {
+            var minX = coords[0][1], maxX = coords[0][1];
+            var minY = coords[0][0], maxY = coords[0][0];
+
+            coords.forEach(function(coord) {
+                if (coord[1] < minX) minX = coord[1];
+                if (coord[1] > maxX) maxX = coord[1];
+                if (coord[0] < minY) minY = coord[0];
+                if (coord[0] > maxY) maxY = coord[0];
+            });
+
+            return {minX: minX, maxX: maxX, minY: minY, maxY: maxY};
+        }
+
+        var boundingBox = findBoundingBox(polygonCoords);
+
+        // Function to create the progress polygon
+        function createProgressPolygon(progress) {
+            var minX = boundingBox.minX;
+            var maxX = boundingBox.maxX;
+            var minY = boundingBox.minY;
+            var maxY = boundingBox.maxY;
+
+            var currentY = minY + (maxY - minY) * progress;
+
+            var progressPolygonCoords = [
+                [minY, minX],
+                [currentY, minX],
+                [currentY, maxX],
+                [minY, maxX]
+            ];
+
+            return L.polygon(progressPolygonCoords, {color: 'red', fillOpacity: 0.5});
+        }
+
+        // Initialize the progress polygon
+        var progressPolygon = createProgressPolygon(0);
+        progressPolygon.addTo(map);
+
+        // Function to update the progress polygon
+        function updateProgressPolygon(progress) {
+            map.removeLayer(progressPolygon);
+            progressPolygon = createProgressPolygon(progress);
+            progressPolygon.addTo(map);
+
+            // Clip the progress polygon to the main polygon
+            clipProgressPolygon();
+        }
+
+        // Add a button to start the simulation
+        var startButton = L.control({position: 'topleft'});
+        startButton.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'leaflet-bar');
+            var link = L.DomUtil.create('a', '', div);
+            link.href = '#';
+            link.innerHTML = 'Start Simulation';
+            link.onclick = function(e) {
+                e.preventDefault();
+                startSimulation();
+            };
+            return div;
+        };
+        startButton.addTo(map);
+
+        // Function to start the simulation
+        function startSimulation() {
+            var progress = 0;
+            var interval = setInterval(function() {
+                if (progress >= 1) {
+                    clearInterval(interval);
+                } else {
+                    progress += 0.01;
+                    updateProgressPolygon(progress);
+                }
+            }, 100);
+        }
+
+        // Adding the clip path to the main polygon to hide the excess fill
+        function clipProgressPolygon() {
+            var svg = d3.select(map.getPanes().overlayPane).select("svg").select("g");
+            var clipPath = svg.append("defs").append("clipPath")
+                .attr("id", "clip");
+
+            clipPath.append("polygon")
+                .attr("points", polygonCoords.map(function(coord) {
+                    return map.latLngToLayerPoint(coord).x + "," + map.latLngToLayerPoint(coord).y;
+                }).join(" "));
+
+            // Apply clip path to the progress polygon
+            d3.select(progressPolygon._path).attr("clip-path", "url(#clip)");
+        }
+
+        // Initial clip setup
+        clipProgressPolygon();
+
+    </script>
 </body>
 </html>
