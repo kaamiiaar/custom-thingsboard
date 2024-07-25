@@ -556,7 +556,7 @@ function createProgressPolygon(polygonCoords, progress) {
       [minY, maxX]
   ];
 
-  return L.polygon(progressPolygonCoords, {color: '#0088D1', fillOpacity: 0.35, weight: 0});
+  return L.polygon(progressPolygonCoords, {color: '#0088D1', fillOpacity: 0.4, weight: 0});
 }
 
 // Function to find the bounding box of the polygon
