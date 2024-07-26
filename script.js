@@ -627,16 +627,3 @@ function clipProgressPolygon(progressPolygon, mainPolygonCoords) {
   // Apply clip path to the progress polygon
   d3.select(progressPolygon._path).attr("clip-path", "url(#" + clipPathId + ")");
 }
-
-// Initial setup and event listeners for the map
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('sequence-container');
-  displaySequences(container, sequences, all_sequences[1]);
-
-  map.on('zoomend', () => {
-      setsData.forEach((set, index) => {
-          const setLayer = L.polygon(set.coordinates, {color: 'transparent'}).addTo(map);
-          clipProgressPolygon(setLayer, set.coordinates);
-      });
-  });
-});
