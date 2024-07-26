@@ -420,7 +420,7 @@ var map = L.map('map').setView([-19.576, 147.31], 14); // Centering on a general
 // Add a tile layer to the map
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ',
-    maxZoom: 55
+    maxZoom: 45
 }).addTo(map);
 
 // Add polygons to the map
@@ -556,7 +556,7 @@ function createProgressPolygon(polygonCoords, progress) {
       [minY, maxX]
   ];
 
-  return L.polygon(progressPolygonCoords, {color: '#0088D1', fillOpacity: 0.4, weight: 0});
+  return L.polygon(progressPolygonCoords, {color: '#007BFF', fillOpacity: 0.4, opacity: 0.8});
 }
 
 // Function to find the bounding box of the polygon
@@ -576,6 +576,11 @@ function findBoundingBox(coords) {
 
 // Function to start the simulation for Set2
 function startSet2Fill() {
+  const button = document.getElementById('start-set2-fill');
+  button.disabled = true; // Disable the button
+  // change style of button to make it look disabled
+  button.style.backgroundColor = "grey";
+
   let progress = 0;
   const set2Coordinates = setsData.find(set => set.name === 'c1fa-set2').coordinates;
   let progressPolygon = createProgressPolygon(set2Coordinates, progress);
@@ -584,6 +589,7 @@ function startSet2Fill() {
   const interval = setInterval(function() {
       if (progress >= 1) {
           clearInterval(interval);
+          button.disabled = true; // Keep the button disabled
       } else {
           progress += 0.01;
           map.removeLayer(progressPolygon);
@@ -592,13 +598,26 @@ function startSet2Fill() {
           clipProgressPolygon(progressPolygon, set2Coordinates);
       }
   }, 100);
+
+  map.on('zoomend', () => {
+      clipProgressPolygon(progressPolygon, set2Coordinates);
+  });
+
+  // Allow for manual interruption of the simulation (optional)
+  document.getElementById('stop-irrigation-plan').addEventListener('click', function() {
+      clearInterval(interval);
+      button.disabled = false; // Re-enable the button if interrupted
+  });
 }
 
 // Function to clip the progress polygon to the main polygon
 function clipProgressPolygon(progressPolygon, mainPolygonCoords) {
   const svg = d3.select(map.getPanes().overlayPane).select("svg").select("g");
+  const clipPathId = "clip-" + Math.random().toString(36).substr(2, 9);
+
+  svg.select("defs").remove(); // Remove previous clip paths
   const clipPath = svg.append("defs").append("clipPath")
-      .attr("id", "clip");
+      .attr("id", clipPathId);
 
   clipPath.append("polygon")
       .attr("points", mainPolygonCoords.map(function(coord) {
@@ -606,5 +625,18 @@ function clipProgressPolygon(progressPolygon, mainPolygonCoords) {
       }).join(" "));
 
   // Apply clip path to the progress polygon
-  d3.select(progressPolygon._path).attr("clip-path", "url(#clip)");
+  d3.select(progressPolygon._path).attr("clip-path", "url(#" + clipPathId + ")");
 }
+
+// Initial setup and event listeners for the map
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('sequence-container');
+  displaySequences(container, sequences, all_sequences[1]);
+
+  map.on('zoomend', () => {
+      setsData.forEach((set, index) => {
+          const setLayer = L.polygon(set.coordinates, {color: 'transparent'}).addTo(map);
+          clipProgressPolygon(setLayer, set.coordinates);
+      });
+  });
+});
